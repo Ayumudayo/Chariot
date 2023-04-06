@@ -1,23 +1,21 @@
+# README
+
 # KORD
 
 KORD is a Discord Bot written in python; made with discord.py.
 
-## Prerequisite
+You can check explanation of updates on [My Tistory Blog](https://u-bvm.tistory.com/) maybe? (Korean)
 
----
+## Prerequisite
 
 - Python 3.10 or higher
 - .NET 4.* or higher (If you want to use with dll.)
 
 ## Install
 
----
-
 Simply clone this repository, install requirments follow requirements.txt and run `kordBotPy.py` . And that’s it!
 
 ## Commands
-
----
 
 ### /kd
 
@@ -53,7 +51,5 @@ Convert Datetime to UNIX Timestamp.
 Convert UNIX Timestamp to Datetime
 
 ## Links
-
----
 
 **[discord.py](https://github.com/Rapptz/discord.py)**
