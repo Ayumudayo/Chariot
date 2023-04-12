@@ -9,7 +9,6 @@ You can check explanation of updates on [My Tistory Blog](https://u-bvm.tistory.
 ## Prerequisite
 
 - Python 3.10 or higher
-- .NET 4.* or higher (If you want to use with dll.)
 
 ## Install
 
