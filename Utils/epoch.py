@@ -1,10 +1,8 @@
 from datetime import datetime
 from pytz import timezone
 from math import trunc
-import time
 
-import pytz
-from Log import Logger as lg
+from Utils.Log import Logger as lg
 
 class Epoch:
     # Convert Datetime to Timestamp

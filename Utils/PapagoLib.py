@@ -1,7 +1,4 @@
-import os
 import random
-import sys
-import urllib.request
 import requests
 
 class Translator():    

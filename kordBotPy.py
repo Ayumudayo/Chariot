@@ -7,11 +7,14 @@ import time
 import json
 
 from discord import app_commands
-from PapagoLib import Translator
-from PandasCsv import pdCsv as pc
-from Currency import Exchange as ex
-from epoch import Epoch as ep
-from Log import Logger as lg
+from Buttons.LineBtn import Entry as ent
+
+from Utils.PapagoLib import Translator
+from Utils.PandasCsv import pdCsv as pc
+from Utils.Currency import Exchange as ex
+from Utils.epoch import Epoch as ep
+from Utils.Log import Logger as lg
+from Utils import checkover as co
 
 with open("./keys.json", 'r') as f:
     cfg = json.load(f)
@@ -46,6 +49,7 @@ async def on_ready():
     print('------')
 #endregion
 
+#region KD
 # Get result with random blanks
 @client.tree.command()
 @app_commands.describe(query='변환할 한국어 문자열')
@@ -79,67 +83,13 @@ async def kdnorm(
     output = Translator.getRes(query, False)
     lg.writeLog(1, f"kdnorm() output : {output}")
     await interaction.response.send_message(output, ephemeral=True)
+#endregion
 
-# Button class
-class Entry(discord.ui.View):
-    def __init__(self, ebdInteraction):
-        super().__init__(timeout=None)
-        self.value = None
-        self.ebdIntr = ebdInteraction
-        self.entryList = []
-    
-    # Entry a draw
-    @discord.ui.button(label="줄 서기", style=discord.ButtonStyle.green, custom_id='entry')
-    async def doEntry(self, btnInteraction: discord.Interaction, button: discord.ui.Button):
-        if(self.ebdIntr.user.id != btnInteraction.user.id):
-            # Append user info to entryList in Tuple
-            if((btnInteraction.user.display_name, btnInteraction.user.id) not in self.entryList):
-                self.entryList.append((btnInteraction.user.display_name, btnInteraction.user.id))
-                #print(f"{btnInteraction.user.display_name} Entry")
-                lg.writeLog(1, f"{btnInteraction.user.display_name} Entry at {self.ebdIntr.user.display_name}'s Line.")
-                await btnInteraction.response.send_message("줄 서기 완료!", ephemeral=True)
-            else:
-                await btnInteraction.response.send_message("이미 줄 스신거 같은데...", ephemeral=True)
-        else:
-            await btnInteraction.response.send_message("줄 세운 사람이 줄 스면 어쩌나?", ephemeral=True)
-
-
-    # Print entryList
-    @discord.ui.button(label="참가자 확인", style=discord.ButtonStyle.grey, custom_id='checkEntry')
-    async def printEntry(self, btnInteraction: discord.Interaction, button: discord.ui.Button):
-        tmpList = []
-
-        if(len(self.entryList) != 0):
-            for tmp in self.entryList:
-                # Get each user's display name
-                tmpList.append(tmp[0])
-
-            tmpStr = '\n'.join(tmpList)
-
-            # Print users' display name
-            await btnInteraction.response.send_message(tmpStr, ephemeral=True)
-        else:
-            await btnInteraction.response.send_message("참가자가 없어요.", ephemeral=True)
-      
-        lg.writeLog(1, "List printed.")
-
-# Async function that check the deadline is reached
-async def checkOver(endTime):
-        if(int(time.time()) >= endTime):
-            return False
-
-        while True:
-            if(int(time.time()) >= endTime):
-                break
-            # Check evrey minute.
-            await asyncio.sleep(1.0)        
-
-        return True
-
+#region Line
 @client.tree.command()
 @app_commands.describe(prize='품목', hour='시간', min='분', sec='초')
-async def line(interaction: discord.Interaction, prize: str, hour: int, min: int, sec: int=None):
-    """줄을 세운다...!"""
+async def line(interaction: discord.Interaction, prize: str, hour: app_commands.Range[int, 0, 12], min: app_commands.Range[int, 0, 59], sec: app_commands.Range[int, 6, 59] = None):
+    """줄을 세운다...! 마감까지의 시간은 5분 이상으로 설정하세요."""
 
     if (sec == None):
         sec = 0
@@ -150,15 +100,19 @@ async def line(interaction: discord.Interaction, prize: str, hour: int, min: int
     
     # Get deadline from user
     total_time = 3600 * hour + 60 * min + sec
+
+    if(total_time < 300):
+        await interaction.response.send_message('시간이 너무 짧습니다. 5분 이상의 시간으로 설정하세요.', ephemeral=True)
+        return
+
     start_time = int(time.time())
     ts = start_time + total_time
     
     # Create countdown Task
-    task = asyncio.create_task(checkOver(ts))
+    task = asyncio.create_task(co.checkOver(ts))
 
     # Create button View
-    view = Entry(interaction)
-    #view.timeout(None)
+    view = ent.Entry(interaction)
 
     # Initial Embed
     embed = discord.Embed(title=f'"줄 #{lastIdx}"', timestamp=datetime.datetime.now(), colour=discord.Colour.random())
@@ -250,47 +204,59 @@ async def line(interaction: discord.Interaction, prize: str, hour: int, min: int
                 embed.add_field(name='마감 시간', value=f"<t:{ts}:F>", inline=False)
                 embed.add_field(name='줄 세운 사람', value=f'<@{interaction.user.id}>')
                 embed.add_field(name='입력 오류 발생!', inline=False, value='마감시간은 현재 시간보다 빠를 수 없습니다.')
-                #print("Deadline Input Error.")
                 lg.writeLog(2, "Deadline Input Error.")
                 await thrdMsg.edit(embed=embed, view=None)
+#endregion
 
-
+#region exchange
 @client.tree.command()
 @app_commands.describe(twd='신 타이완 달러')
-async def tk(interaction: discord.Interaction, twd: float):
-    """신 타이완 달러를 원화로 표시"""
+async def tk(interaction: discord.Interaction, twd: app_commands.Range[float, 0, None]):
+    """신 타이완 달러를 원화로 표시. 0 이상의 정수를 입력할 것."""
+
+    lg.writeLog(1, f"{interaction.user.display_name} request tk().")
 
     result = ex.exchCur('twd', twd, 'krw')
 
-    twd = format(twd, ',')
+    if(result != 0):
+        twd = format(twd, ',')
 
-    lg.writeLog(1, f"NT$ {twd} to KRW / {result}")
-    await interaction.response.send_message(f"NT$ {twd} to KRW\n{result}", ephemeral=True)
+        lg.writeLog(1, f"NT$ {twd} to KRW / {result}")
+        await interaction.response.send_message(f"NT$ {twd} to KRW\n{result}", ephemeral=True)
 
 @client.tree.command()
 @app_commands.describe(src='변환할 화폐', amount='돈의 양', dst='변환 목적 화폐')
 async def exchange(interaction: discord.Interaction, src: str, amount: float, dst: str=None):
     """환율 계산. dst는 미입력시 KRW로 간주합니다."""
 
+    lg.writeLog(1, f"{interaction.user.display_name} request exchange.")
+
     if (dst == None):
         dst = 'krw'
 
     result = ex.exchCur(src, amount, dst)
-    src = src.upper()
-    dst = dst.upper()
 
-    amount = format(amount, ',')
-    
-    lg.writeLog(1, f"{src} {amount} to {dst} / {result}")
-    await interaction.response.send_message(f"{src} {amount} to {dst}\n{result}", ephemeral=True)
+    if(result != 0):
+        src = src.upper()
+        dst = dst.upper()
 
+        amount = format(amount, ',')
 
+        lg.writeLog(1, f"{src} {amount} to {dst} / {result}")
+        await interaction.response.send_message(f"{src} {amount} to {dst}\n{result}", ephemeral=True)
+    else:
+        await interaction.response.send_message("처리 중 오류가 발생했습니다. USD, KRW, JPY와 같은 제대로 된 통화코드를 입력했나요?", ephemeral=True)
+#endregion
+
+#region Epoch
 @client.tree.command()
 @app_commands.describe(year='연도', month='월', day='일', hour='시', min='분', sec='초')
 async def cvtime(interaction: discord.Interaction, month: app_commands.Range[int, 1, 12], day: app_commands.Range[int, 1, 31], 
                 hour: app_commands.Range[int, 0,23 ], min: app_commands.Range[int, 0, 59],
                 year: app_commands.Range[int, 0, 9999]=None, sec: app_commands.Range[int, 0, 59]=None):
     """Datetime을 Timestamp로 변환. 24시간 포맷으로 입력할 것."""
+
+    lg.writeLog(1, f"{interaction.user.display_name} request cvtime()")
 
     # As default, using current year
     if(year == None):
@@ -317,6 +283,8 @@ async def cvtime(interaction: discord.Interaction, month: app_commands.Range[int
 async def cvstamp(interaction: discord.Interaction, srcstamp: int):
     """Timestamp를 Datetime으로 변환."""
 
+    lg.writeLog(1, f"{interaction.user.display_name} request cvstamp()")
+
     detTime = ep.ConvertStamp(srcstamp)
 
     # Exception Handling
@@ -327,5 +295,6 @@ async def cvstamp(interaction: discord.Interaction, srcstamp: int):
     else:
         lg.writeLog(1, f"Convert Timestamp {srcstamp} to Datetime / {detTime} (GMT+9)")
         await interaction.response.send_message(f'Convert Timestamp "{srcstamp}" to Datetime\n{detTime} (GMT+9)', ephemeral=True)
+#endregion
 
 client.run(cfg['BotToken'])
