@@ -112,7 +112,7 @@ async def line(interaction: discord.Interaction, prize: str, hour: app_commands.
     task = asyncio.create_task(co.checkOver(ts))
 
     # Create button View
-    view = ent.Entry(interaction)
+    view = ent(interaction)
 
     # Initial Embed
     embed = discord.Embed(title=f'"줄 #{lastIdx}"', timestamp=datetime.datetime.now(), colour=discord.Colour.random())
