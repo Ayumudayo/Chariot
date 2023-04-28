@@ -4,11 +4,12 @@ from Utils.Log import Logger as lg
 
 # Button class
 class Entry(discord.ui.View):
-    def __init__(self, ebdInteraction):
+    def __init__(self, ebdInteraction, prize):
         super().__init__(timeout=None)
         self.value = None
         self.ebdIntr = ebdInteraction
         self.entryList = []
+        self.prize = prize
     
     # Entry a draw
     @discord.ui.button(label="줄 서기", style=discord.ButtonStyle.green, custom_id='entry')
@@ -17,7 +18,7 @@ class Entry(discord.ui.View):
             # Append user info to entryList in Tuple
             if((btnInteraction.user.display_name, btnInteraction.user.id) not in self.entryList):
                 self.entryList.append((btnInteraction.user.display_name, btnInteraction.user.id))
-                lg.writeLog(1, f"{btnInteraction.user.display_name} Entry at {self.ebdIntr.user.display_name}'s Line.")
+                lg.writeLog(1, f"{btnInteraction.user.display_name} Entry at {self.ebdIntr.user.display_name}'s {self.prize} Line.")
                 await btnInteraction.response.send_message("줄 서기 완료!", ephemeral=True)
             else:
                 await btnInteraction.response.send_message("이미 줄 스신거 같은데...", ephemeral=True)
