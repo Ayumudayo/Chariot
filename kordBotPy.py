@@ -112,7 +112,7 @@ async def line(interaction: discord.Interaction, prize: str, hour: app_commands.
     task = asyncio.create_task(co.checkOver(ts))
 
     # Create button View
-    view = ent(interaction)
+    view = ent(interaction, prize)
 
     # Initial Embed
     embed = discord.Embed(title=f'"줄 #{lastIdx}"', timestamp=datetime.datetime.now(), colour=discord.Colour.random())
@@ -155,6 +155,10 @@ async def line(interaction: discord.Interaction, prize: str, hour: app_commands.
             embed.add_field(name='"주작 결과"', value='참가자가 없었어요.', inline=False)
             lg.writeLog(1, f"There was no Entry at {interaction.user.display_name}'s {prize} Line.")
             await thrdMsg.edit(embed=embed, view=None)
+
+            await thrd.send(f'<@{interaction.user.id}> \n 참가자가 없었어요.')
+
+
         else:
                         
             # Get winner and edit embed
@@ -184,6 +188,8 @@ async def line(interaction: discord.Interaction, prize: str, hour: app_commands.
             lg.writeLog(1, f"{winner[0]} gets {interaction.user.display_name}'s {prize}!")
             await thrdMsg.edit(embed=embed, view=None)
 
+            await thrd.send(f'<@{winner[1]}>, <@{interaction.user.id}> \n 추첨 결과를 확인하세요!')
+
     else:
         # Temp Data
                 dictTemp = {
@@ -206,6 +212,8 @@ async def line(interaction: discord.Interaction, prize: str, hour: app_commands.
                 embed.add_field(name='입력 오류 발생!', inline=False, value='마감시간은 현재 시간보다 빠를 수 없습니다.')
                 lg.writeLog(2, "Deadline Input Error.")
                 await thrdMsg.edit(embed=embed, view=None)
+
+                await thrd.send(f'<@{interaction.user.id}> \n 마감 시간 입력이 제대로 되었나 확인하세요.')
 #endregion
 
 #region exchange

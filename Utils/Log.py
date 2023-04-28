@@ -45,4 +45,4 @@ class Logger:
 
         # Print log on terminal
         print(f'[{today}]', end="    ")
-        print('{type:<19} {str}'.format(type = lt, str = content))
+        print('{type:<18} {str}'.format(type = lt, str = content))
