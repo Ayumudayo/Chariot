@@ -9,7 +9,7 @@ async def checkOver(endTime):
         while True:
             if(int(time.time()) >= endTime):
                 break
-            # Check evrey minute.
+            # Check evrey second.
             await asyncio.sleep(1.0)        
 
         return True
