@@ -16,7 +16,7 @@ class Exchange():
             total = format(total, ',')
 
         except:
-            lg.writeLog(2, "Something went wrong while processing exchCur()!!")
+            lg.error("Something went wrong while processing exchCur()!!")
             total = 0
 
         return total

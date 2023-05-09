@@ -16,12 +16,12 @@ class Epoch:
             detStamp = utc.timestamp()
 
             # Drop point
-            #lg.writeLog(3, f'Before Trunc {detStamp}')
+            #lg.debug(f'Before Trunc {detStamp}')
             detStamp = trunc(detStamp)
-            #lg.writeLog(3, f'After Trunc {detStamp}')
+            #lg.debug(f'After Trunc {detStamp}')
 
         except:
-            lg.writeLog(2, "Wrong Datetime Input")
+            lg.error("Wrong Datetime Input")
             detStamp = 0
 
         return detStamp
@@ -31,13 +31,13 @@ class Epoch:
 
         try:
             detTime = datetime.fromtimestamp(stamp, timezone('Asia/Seoul'))       
-            #lg.writeLog(3, f'Time : {detTime}')
+            #lg.debug(f'Time : {detTime}')
 
             detTime = detTime.strftime('%Y-%m-%d %H:%M:%S')
-            #lg.writeLog(3, f'Datetime : {detTime}')
+            #lg.debug(f'Datetime : {detTime}')
 
         except:
-            lg.writeLog(2, "Something went wrong while processing ConvertStamp()!!")
+            lg.error("Something went wrong while processing ConvertStamp()!!")
             detTime = 0
 
         return detTime
