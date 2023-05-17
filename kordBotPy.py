@@ -67,13 +67,15 @@ async def kd(
 ):
     """한국어 문자열을 무작위 공백을 포함한 번역투 문장으로 변환"""
 
-    if(not Translator.LangDect(query)):
+    if not Translator.LangDect(query):
         lg.error("Inputted string is not Korean.")
         await interaction.response.send_message('입력된 문자열이 한국어가 아닙니다.', ephemeral=True)
-    else:
-        output = Translator.getRes(query)
-        lg.info(f"kd() output : {output}")
-        await interaction.response.send_message(output, ephemeral=True)
+        return
+
+    output = Translator.getRes(query)
+    lg.info(f"kd() output : {output}")
+    await interaction.response.send_message(output, ephemeral=True)
+    return
 
 # Get result without random blanks
 @client.tree.command()
@@ -84,13 +86,15 @@ async def kdnorm(
 ):
     """한국어 문자열을 추가적 공백 삽입 없는 번역투 문장으로 변환"""
 
-    if(not Translator.LangDect(query)):
+    if not Translator.LangDect(query):
         lg.error("Inputted string is not Korean.")
         await interaction.response.send_message('입력된 문자열이 한국어가 아닙니다.', ephemeral=True)
+        return
 
     output = Translator.getRes(query, False)
     lg.info(f"kdnorm() output : {output}")
     await interaction.response.send_message(output, ephemeral=True)
+    return
 #endregion
 
 #region Line
@@ -266,8 +270,7 @@ async def cvtime(interaction: discord.Interaction, month: app_commands.Range[int
     lg.info(f"{interaction.user.display_name} request cvtime()")
 
     # As default, using current year
-    if(year == None):
-        year = datetime.datetime.today().year
+    year = year or datetime.datetime.today().year
 
     # 0 Second is default argument
     if(sec == None):

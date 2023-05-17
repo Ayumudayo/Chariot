@@ -12,13 +12,9 @@ class Epoch:
         try:
             srcTime = f'{year}-{month}-{day} {hour}:{min}:{sec} +0900'
             utc = datetime.strptime(srcTime, '%Y-%m-%d %H:%M:%S %z')
-            #print(utc.tzinfo)
-            detStamp = utc.timestamp()
 
             # Drop point
-            #lg.debug(f'Before Trunc {detStamp}')
-            detStamp = trunc(detStamp)
-            #lg.debug(f'After Trunc {detStamp}')
+            detStamp = trunc(utc.timestamp())
 
         except:
             lg.error("Wrong Datetime Input")
@@ -30,11 +26,8 @@ class Epoch:
     def ConvertStamp(stamp):
 
         try:
-            detTime = datetime.fromtimestamp(stamp, timezone('Asia/Seoul'))       
-            #lg.debug(f'Time : {detTime}')
-
+            detTime = datetime.fromtimestamp(stamp, timezone('Asia/Seoul'))
             detTime = detTime.strftime('%Y-%m-%d %H:%M:%S')
-            #lg.debug(f'Datetime : {detTime}')
 
         except:
             lg.error("Something went wrong while processing ConvertStamp()!!")

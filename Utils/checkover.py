@@ -1,15 +1,18 @@
 import asyncio
 import time
 
-# Async function that check the deadline is reached
-async def checkOver(endTime):
-        if(int(time.time()) >= endTime):
+async def checkOver(deadline):
+    if int(time.time()) >= deadline:
+        return False
+
+    while True:
+        try:
+            await asyncio.sleep(1.0)
+        except asyncio.CancelledError:
+            # The task was cancelled, so return False
             return False
 
-        while True:
-            if(int(time.time()) >= endTime):
-                break
-            # Check evrey second.
-            await asyncio.sleep(1.0)        
+        if int(time.time()) >= deadline:
+            break
 
-        return True
+    return True

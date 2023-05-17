@@ -37,12 +37,9 @@ class awsDynamo:
             awsDynamo.table = None
             return True
 
-        except:
-            raise
-            
-        return False
-
-
+        except ClientError as e:
+            print(e.response['Error']['Message'])
+            return False
     
 
     # Update Table 'linelist'
