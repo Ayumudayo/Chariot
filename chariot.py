@@ -14,6 +14,7 @@ from Utils.Currency import Exchange as ex
 from Utils.epoch import Epoch as ep
 from Utils.Log import Logger
 from Utils import checkover as co
+from Utils.deepL import deepl_translator as dl
 
 from Database.dynamo import awsDynamo
 
@@ -74,25 +75,6 @@ async def kd(
 
     output = Translator.getRes(query)
     lg.info(f"kd() output : {output}")
-    await interaction.response.send_message(output, ephemeral=True)
-    return
-
-# Get result without random blanks
-@client.tree.command()
-@app_commands.describe(query='변환할 한국어 문자열')
-async def kdnorm(
-    interaction: discord.Interaction,
-    query: app_commands.Range[str, 0, 30]
-):
-    """한국어 문자열을 추가적 공백 삽입 없는 번역투 문장으로 변환"""
-
-    if not Translator.LangDect(query):
-        lg.error("Inputted string is not Korean.")
-        await interaction.response.send_message('입력된 문자열이 한국어가 아닙니다.', ephemeral=True)
-        return
-
-    output = Translator.getRes(query, False)
-    lg.info(f"kdnorm() output : {output}")
     await interaction.response.send_message(output, ephemeral=True)
     return
 #endregion
@@ -305,6 +287,49 @@ async def cvstamp(interaction: discord.Interaction, srcstamp: int):
     else:
         lg.info(f"Convert Timestamp {srcstamp} to Datetime / {detTime} (GMT+9)")
         await interaction.response.send_message(f'Convert Timestamp "{srcstamp}" to Datetime\n{detTime} (GMT+9)', ephemeral=True)
+#endregion
+
+#region Metric
+@client.tree.command()
+@app_commands.describe(value='값', imp='입력 가능 단위: in, ft, yd, mi, gal, oz, lb.' )
+async def convertimp(interaction: discord.Interaction, value: float, imp: str):
+    """기열 임페리얼을 기합 메트릭으로 변환."""
+
+    lg.info(f"{interaction.user.display_name} request convertImp().")
+
+    resVal, resMet = unit.imperial_to_metric(value, imp)
+
+    if (resMet == 'ERROR'):
+        lg.error("An error occured while processing convertImp()")
+        await interaction.response.send_message("처리 중 문제가 생겼어요. 단위와 값을 확인해 주세요.", ephemeral=True)
+
+    result = f"{value} {imp} = {resVal:.2f} {resMet}"
+    lg.info(f"{value} {imp} to Metric is {resVal:.2f} {resMet}")
+    await interaction.response.send_message(result, ephemeral=True)
+#endregion
+
+#region DeepL
+@client.tree.command()
+@app_commands.describe(src='출발 언어. 미입력시 자동으로 언어 감지.', dst='도착 언어. 미입력시 한국어로 간주.', query='번역할 내용')
+async def deepl(interaction: discord.Interaction, query: str, src: str=None, dst: str=None):
+    """DeepL을 사용해 텍스트 번역."""
+
+    if len(query) > 5000:
+        await interaction.response.send_message("번역할 내용이 너무 길어요. 5000자 이하로 입력해 주세요.", ephemeral=True)
+        return
+    
+    if src == None:
+        src = 'auto'
+
+    if dst == None:
+        dst = 'ko'
+
+    lg.info(f"{interaction.user.display_name} request deepl().")
+
+    result = dl.dl_trans(src, dst, query)
+
+    lg.info(f"Translate {query} from {src} to {dst} / {result}")
+    await interaction.response.send_message(f"Translate {query} from {src} to {dst}\ \n{result}", ephemeral=True)
 #endregion
 
 client.run(cfg['BotToken'])

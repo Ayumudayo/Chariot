@@ -1,8 +1,8 @@
 # README
 
-# KORD
+# Chariot
 
-KORD is a Discord Bot written in python; made with discord.py.
+Chariot is a Discord Bot written in python; made with discord.py.
 
 You can check explanation of updates on [My Tistory Blog](https://u-bvm.tistory.com/) maybe? (Korean)
 
@@ -48,6 +48,14 @@ Convert Datetime to UNIX Timestamp.
 ### /cvstamp
 
 Convert UNIX Timestamp to Datetime
+
+### /convertimp
+
+Convert imperial to metric
+
+### /deepl
+
+Translate words with DeepL translaotr
 
 ## Links
 
