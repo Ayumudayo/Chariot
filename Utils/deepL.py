@@ -6,9 +6,11 @@ with open("./keys.json", 'r') as f:
 
 rapidapi_key = cfg["RapidAPI"]["RapidAPI_Key"]
 
+f.close()
+
 class deepl_translator:
 
-    def dl_trans(src, dst, query):        
+    async def dl_trans(src, dst, query):        
 
         url = "https://deepl-translator.p.rapidapi.com/translate"
 

@@ -13,6 +13,7 @@ from Utils.PapagoLib import Translator
 from Utils.Currency import Exchange as ex
 from Utils.epoch import Epoch as ep
 from Utils.Log import Logger
+from Utils.unit import unit
 from Utils import checkover as co
 from Utils.deepL import deepl_translator as dl
 
@@ -20,6 +21,8 @@ from Database.dynamo import awsDynamo
 
 with open("./keys.json", 'r') as f:
     cfg = json.load(f)
+
+f.close()
 
 MY_GUILD = discord.Object(id=cfg['GUILD_ID'])
 
@@ -40,7 +43,7 @@ class MyClient(discord.Client):
 
     async def setup_hook(self):
         #self.tree.copy_global_to(guild=MY_GUILD)
-        await self.tree.sync()
+        await self.tree.sync(guild=None)
 
 client = MyClient()
 lg = Logger()
@@ -222,7 +225,7 @@ async def tk(interaction: discord.Interaction, twd: app_commands.Range[float, 0,
 async def exchange(interaction: discord.Interaction, src: str, amount: float, dst: str=None):
     """환율 계산. dst는 미입력시 KRW로 간주합니다."""
 
-    lg.info(f"{interaction.user.display_name} request exchange.")
+    lg.info(f"{interaction.user.display_name} request exchange().")
 
     if (dst == None):
         dst = 'krw'
@@ -310,26 +313,44 @@ async def convertimp(interaction: discord.Interaction, value: float, imp: str):
 
 #region DeepL
 @client.tree.command()
-@app_commands.describe(src='출발 언어. 미입력시 자동으로 언어 감지.', dst='도착 언어. 미입력시 한국어로 간주.', query='번역할 내용')
+@app_commands.describe(src='출발 언어. 미입력시 자동으로 언어 감지.', dst='도착 언어. 미입력시 한국어로 간주. DE, EN, ES, FR, IT, JA 등 입력 가능', query='번역할 내용')
 async def deepl(interaction: discord.Interaction, query: str, src: str=None, dst: str=None):
-    """DeepL을 사용해 텍스트 번역."""
+    """DeepL을 사용해 텍스트 번역. 자동으로 입력 언어를 감지합니다."""
 
-    if len(query) > 5000:
-        await interaction.response.send_message("번역할 내용이 너무 길어요. 5000자 이하로 입력해 주세요.", ephemeral=True)
+    # Discord message cannot contain over 2000 characters.
+    # We can send over 5000 characters as input of command,
+    # But cannot send result which is over 2000 characters.
+    # The following 3000 characters become meaningless.
+    # So, we need to slice the input query to 2000 characters.
+    if len(query) > 2000:
+        await interaction.response.send_message("번역할 내용이 너무 길어요. 2000자 이하로 입력해 주세요.", ephemeral=True)
+        lg.info(f"{interaction.user.display_name} requested deepl() with over 2000 characters.")
         return
     
-    if src == None:
+    # DeepL support Auto-Detect
+    if src is None:
         src = 'auto'
 
-    if dst == None:
+    if dst is None:
         dst = 'ko'
 
-    lg.info(f"{interaction.user.display_name} request deepl().")
+    lg.info(f"{interaction.user.display_name} requested deepl().")
 
-    result = dl.dl_trans(src, dst, query)
+    await interaction.response.defer(ephemeral=True)
+    tr_res_temp = await dl.dl_trans(src, dst, query)
+    result = f"DeepL Translation to {dst} \n\n{tr_res_temp}"
 
-    lg.info(f"Translate {query} from {src} to {dst} / {result}")
-    await interaction.response.send_message(f"Translate {query} from {src} to {dst}\ \n{result}", ephemeral=True)
+    # Slice if over 2000 characters
+    if(len(result) > 2000):
+        result = f"결과가 2000자를 초과하여 모든 결과를 표시할 수 없습니다. \n\n{result}"
+        result = result[:2000]
+        lg.info("Result message has exceeded 2000 characters; All of the message cannot be sent.")
+        await interaction.followup.send(result)
+
+        return
+
+    lg.info(f"The translation has completed successfully.")
+    await interaction.followup.send(result)
 #endregion
 
 client.run(cfg['BotToken'])
