@@ -17,7 +17,40 @@ class Translator():
         Translator.sdList.append(('en', 'zh-CN'))
         Translator.sdList.append(('zh-CN', "ko"))
 
-    def Translate(text, i = 0):
+    def Translate(text):
+
+        langCode = Translator.LangDect(text)
+
+        papago_url = 'https://openapi.naver.com/v1/papago/n2mt'
+        papago_headers = {
+            'X-Naver-Client-Id': Translator.TR_Cliend_Id,
+            'X-Naver-Client-Secret': Translator.TR_Cliend_Secret
+        }
+        papago_data = {
+            'source': langCode,
+            'target': 'ko',
+            'text': text
+        }
+        papago_response = requests.post(papago_url, headers=papago_headers, data=papago_data)
+        papago_result = papago_response.json()
+
+        return papago_result['message']['result']['translatedText']
+    
+    def LangDect(text):
+        papagoLD_url = 'https://openapi.naver.com/v1/papago/detectLangs'
+        papagoLD_headers = {
+            'X-Naver-Client-Id': Translator.LD_Cliend_Id,
+            'X-Naver-Client-Secret': Translator.LD_Cliend_Secret
+        }
+        papagoLD_data = {
+            'query': text
+        }
+        papagoLD_response = requests.post(papagoLD_url, headers=papagoLD_headers, data=papagoLD_data)
+        papagoLD_result = papagoLD_response.json()
+
+        return papagoLD_result['langCode']
+
+    def TranslateKD(text, i = 0):
         
         count = i
 
@@ -37,9 +70,9 @@ class Translator():
         if(count == 3):
             return papago_result['message']['result']['translatedText']
 
-        return Translator.Translate(papago_result['message']['result']['translatedText'], count + 1)
+        return Translator.TranslateKD(papago_result['message']['result']['translatedText'], count + 1)
 
-    def LangDect(text):
+    def LangDectKD(text):
         papagoLD_url = 'https://openapi.naver.com/v1/papago/detectLangs'
         papagoLD_headers = {
             'X-Naver-Client-Id': Translator.LD_Cliend_Id,
@@ -57,7 +90,7 @@ class Translator():
 
     def getRes(input, insert = True):
 
-        output = Translator.Translate(input, 0)
+        output = Translator.TranslateKD(input, 0)
         outputList = list(output)
 
         if(insert):

@@ -10,6 +10,8 @@ with open("./keys.json", 'r') as f:
 Accees_Key_ID = cfg['AwsKeys']['Accees_Key_ID']
 Secret_Access_Key = cfg['AwsKeys']['Secret_Access_Key']
 
+f.close()
+
 class awsDynamo:
     """A Class that handle AWS DynamoDB"""
 

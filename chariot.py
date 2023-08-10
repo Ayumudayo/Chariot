@@ -16,8 +16,12 @@ from Utils.Log import Logger
 from Utils.unit import unit
 from Utils import checkover as co
 from Utils.deepL import deepl_translator as dl
+from Utils.MaintParser import Parser as pa
+from Utils.EmbedResponse import Response as rs
 
 from Database.dynamo import awsDynamo
+
+
 
 with open("./keys.json", 'r') as f:
     cfg = json.load(f)
@@ -71,14 +75,16 @@ async def kd(
 ):
     """한국어 문자열을 무작위 공백을 포함한 번역투 문장으로 변환"""
 
-    if not Translator.LangDect(query):
+    if not Translator.LangDectKD(query):
         lg.error("Inputted string is not Korean.")
-        await interaction.response.send_message('입력된 문자열이 한국어가 아닙니다.', ephemeral=True)
+        embed = rs.error('입력된 문자열이 한국어가 아닙니다.')
+        await interaction.response.send_message(embed=embed, ephemeral=True)
         return
 
     output = Translator.getRes(query)
     lg.info(f"kd() output : {output}")
-    await interaction.response.send_message(output, ephemeral=True)
+    embed = rs.general('변환 완료!' ,output)
+    await interaction.response.send_message(embed=embed, ephemeral=True)
     return
 #endregion
 
@@ -204,7 +210,7 @@ async def line(interaction: discord.Interaction, prize: str, hour: app_commands.
         await thrd.send(f'<@{interaction.user.id}> \n 마감 시간 입력이 제대로 되었나 확인하세요.')
 #endregion
 
-#region exchange
+#region Exchange
 @client.tree.command()
 @app_commands.describe(twd='신 타이완 달러')
 async def tk(interaction: discord.Interaction, twd: app_commands.Range[float, 0, None]):
@@ -244,6 +250,50 @@ async def exchange(interaction: discord.Interaction, src: str, amount: float, ds
         await interaction.response.send_message("처리 중 오류가 발생했습니다. USD, KRW, JPY와 같은 제대로 된 통화코드를 입력했나요?", ephemeral=True)
 #endregion
 
+#region Exchange_Rate_Table
+@client.tree.command()
+@app_commands.describe(src='Source Currency. Default : USD', amount='Amount of Source Currency. Default : 1')
+async def ratetable(interaction: discord.Interaction, src: str=None, amount: app_commands.Range[float, 0, None]=None):
+    """Show the exchange rate table."""
+
+    await interaction.response.defer()
+
+    # Set default values if not provided
+    src = src.lower() if src else 'usd'
+    amount = amount if amount else 1
+
+    try:
+        # Get exchange rates
+        result = ex.exchCurList(src, amount)
+        if result is None:
+            raise ValueError("No exchange rates found for the given source and amount.")
+        exchange_rates = list(result.values())
+
+        # Create an embed message with the exchange rates
+        embed = discord.Embed(title="**Exchange Rate**", colour=discord.Colour.dark_green())
+        embed.description = f'Exchange rates for **[ {amount} {src.upper()} ]**'
+        embed.set_thumbnail(url="https://cdn.discordapp.com/attachments/1138398345065414657/1138816034049105940/gil.png")
+        embed.add_field(name="", value="", inline=False)  # Padding
+
+        # Add fields for each currency
+        currencies = ['USD', 'KRW', 'JPY', 'EUR', 'GBP', 'CNY', 'TRY', 'ARS', 'TWD', 'MNT']
+        flags = [':flag_us:', ':flag_kr:', ':flag_jp:', ':flag_eu:', ':flag_gb:', ':flag_cn:', ':flag_tr:', ':flag_ar:', ':flag_tw:', ':flag_mn:']
+        for flag, currency, rate in zip(flags, currencies, exchange_rates):
+            embed.add_field(name=f'{flag} {currency}', value=rate, inline=True)
+
+        embed.add_field(name="", value="", inline=False)  # Padding
+        embed.add_field(name="", value="Powered by [fawazahmed0/currency-api](https://github.com/fawazahmed0/currency-api)", inline=False)
+        embed.set_footer(text=f'{datetime.datetime.now().strftime("%Y-%m-%d")} 기준')
+
+        # Send embed message
+        await interaction.followup.send(embed=embed)
+
+    except:
+        lg.error("Something went wrong while processing ratetable()")
+        embed = rs.error("처리 중 오류가 발생했습니다. USD, KRW, JPY와 같은 제대로 된 통화코드를 입력했는지 확인하세요.")
+        await interaction.followup.send(embed=embed, ephemeral=True)
+#endregion
+
 #region Epoch
 @client.tree.command()
 @app_commands.describe(year='연도', month='월', day='일', hour='시', min='분', sec='초')
@@ -266,12 +316,14 @@ async def cvtime(interaction: discord.Interaction, month: app_commands.Range[int
     # Exception Handling
     if(detStamp == 0):
         lg.error("Something went wrong while processing cvtime()")
+        embed = rs.error("처리 중 문제가 생겼어요. 날짜 및 시간을 제대로 확인해 주세요.")
         await interaction.response.send_message("처리 중 문제가 생겼어요. 날짜 및 시간을 제대로 확인해 주세요.", ephemeral=True)
 
     else:
         srcTime = ep.ConvertStamp(detStamp)
         lg.info(f'Convert Datetime {srcTime} (GMT+9) to Timestamp / {detStamp}')
-        await interaction.response.send_message(f'Convert Datetime "{srcTime} (GMT+9)" to Timestamp\n{detStamp}', ephemeral=True)
+        embed = rs.general(title=f'Datetime "{srcTime} (GMT+9)" to Timestamp', content=f'{detStamp}')
+        await interaction.response.send_message(embed=embed, ephemeral=True)
 
 @client.tree.command()
 @app_commands.describe(srcstamp='타임스탬프')
@@ -285,11 +337,13 @@ async def cvstamp(interaction: discord.Interaction, srcstamp: int):
     # Exception Handling
     if(detTime == 0):
         lg.error("Something went wrong while processing cvstamp()")
+        embed = rs.error("처리 중 문제가 생겼어요. 스탬프를 제대로 확인해 주세요.")
         await interaction.response.send_message("처리 중 문제가 생겼어요. 제대로 된 스탬프를 입력했나요?", ephemeral=True)
 
     else:
         lg.info(f"Convert Timestamp {srcstamp} to Datetime / {detTime} (GMT+9)")
-        await interaction.response.send_message(f'Convert Timestamp "{srcstamp}" to Datetime\n{detTime} (GMT+9)', ephemeral=True)
+        embed = rs.general(title=f'"Timestamp "{srcstamp}" to Datetime"', content=f'{detTime} (GMT+9)')
+        await interaction.response.send_message(embed=embed, ephemeral=True)
 #endregion
 
 #region Metric
@@ -304,11 +358,13 @@ async def convertimp(interaction: discord.Interaction, value: float, imp: str):
 
     if (resMet == 'ERROR'):
         lg.error("An error occured while processing convertImp()")
-        await interaction.response.send_message("처리 중 문제가 생겼어요. 단위와 값을 확인해 주세요.", ephemeral=True)
+        embed = rs.error("처리 중 문제가 생겼어요. 단위와 값을 확인해 주세요.")
+        await interaction.response.send_message(embed=embed, ephemeral=True)
 
     result = f"{value} {imp} = {resVal:.2f} {resMet}"
     lg.info(f"{value} {imp} to Metric is {resVal:.2f} {resMet}")
-    await interaction.response.send_message(result, ephemeral=True)
+    embed = rs.general(title=f'{value} {imp} **IN METRIC**', content=f'**{resVal:.2f} {resMet}**')
+    await interaction.response.send_message(embed=embed, ephemeral=True)
 #endregion
 
 #region DeepL
@@ -323,7 +379,8 @@ async def deepl(interaction: discord.Interaction, query: str, src: str=None, dst
     # The following 3000 characters become meaningless.
     # So, we need to slice the input query to 2000 characters.
     if len(query) > 2000:
-        await interaction.response.send_message("번역할 내용이 너무 길어요. 2000자 이하로 입력해 주세요.", ephemeral=True)
+        embed = rs.error("번역할 내용이 너무 길어요. 2000자 이하로 입력해 주세요.")
+        await interaction.response.send_message(embed=embed, ephemeral=True)
         lg.info(f"{interaction.user.display_name} requested deepl() with over 2000 characters.")
         return
     
@@ -338,19 +395,45 @@ async def deepl(interaction: discord.Interaction, query: str, src: str=None, dst
 
     await interaction.response.defer(ephemeral=True)
     tr_res_temp = await dl.dl_trans(src, dst, query)
-    result = f"DeepL Translation to {dst} \n\n{tr_res_temp}"
 
     # Slice if over 2000 characters
-    if(len(result) > 2000):
-        result = f"결과가 2000자를 초과하여 모든 결과를 표시할 수 없습니다. \n\n{result}"
-        result = result[:2000]
+    if(len(tr_res_temp) > 2000):
+        #result = f"결과가 2000자를 초과하여 모든 결과를 표시할 수 없습니다. \n\n{result}"
+        result = tr_res_temp[:2000]
+        embed = rs.general(title="결과가 2000자를 초과하여 모든 결과를 표시할 수 없습니다.", content=result)
         lg.info("Result message has exceeded 2000 characters; All of the message cannot be sent.")
-        await interaction.followup.send(result)
+        await interaction.followup.send(embed=embed)
 
         return
 
+    embed = rs.general(title=f"DeepL Translation to ***{dst.upper()}***", content=tr_res_temp)
     lg.info(f"The translation has completed successfully.")
-    await interaction.followup.send(result)
+    await interaction.followup.send(embed=embed)
+#endregion
+
+#region MaintInfo
+@client.tree.command()
+async def maintinfo(interaction: discord.Interaction):
+    """공지 관련 정보를 임베드로 작성"""
+
+    lg.info(f"{interaction.user.display_name} request maintinfo()")
+    
+    time_info = pa.GetMaintTimeStamp()
+
+    if not time_info:
+        embed = discord.Embed(title="점검 일정이 없습니다!", colour=discord.Colour.dark_red())
+        embed.set_thumbnail(url="https://cdn.discordapp.com/attachments/1138398345065414657/1138398369929244713/0001061.png")
+        embed.add_field(name="", value="현재 확인할 수 있는 점검 공지가 없습니다.\n무언가 문제가 있다면 공식 로드스톤을 참고해 주세요.")
+        await interaction.response.send_message(embed=embed)
+        return
+
+    output = Translator.Translate(time_info[2])
+
+    embed = discord.Embed(title=time_info[2], url=time_info[3], description=output, colour=discord.Colour.dark_blue())
+    embed.set_thumbnail(url="https://cdn.discordapp.com/attachments/1138398345065414657/1138398369929244713/0001061.png")
+    embed.add_field(name="일정", value=f'시작 : <t:{time_info[0]}:F> \n종료 : <t:{time_info[1]}:F> \n\n<t:{time_info[1]}:R>', inline=False)
+
+    lg.info(f'공지 링크 : {time_info[3]}')
 #endregion
 
 client.run(cfg['BotToken'])

@@ -12,11 +12,29 @@ class Exchange():
             result = request.json()
             total = result[f'{dst}'] * amount
 
-            total = round(total, 2)
-            total = format(total, ',')
+            total = '{:,.2f}'.format(total)
 
         except:
             lg.error("Something went wrong while processing exchCur()!!")
             total = 0
 
         return total
+    
+
+    def exchCurList(src, amount):
+        dst_currencies = ['usd', 'krw', 'jpy', 'eur', 'gbp', 'cny', 'try', 'ars', 'twd', 'mnt']
+        exchange_rates = {}
+
+        for dst in dst_currencies:
+            try:
+                request = requests.get(f"https://cdn.jsdelivr.net/gh/fawazahmed0/currency-api@1/latest/currencies/{src}/{dst}.min.json")
+                result = request.json()
+                total = result[f'{dst}'] * amount
+                total = '{:,.2f}'.format(total)
+                exchange_rates[dst] = total
+
+            except:
+                lg.error("Something went wrong while processing exchCur()!!")
+                return None
+        
+        return exchange_rates
