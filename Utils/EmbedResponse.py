@@ -1,5 +1,6 @@
 from datetime import datetime
 import discord
+from pytz import timezone
 
 class Response:
 
@@ -10,7 +11,7 @@ class Response:
             description = description,
             colour = color
         )
-        embed.set_footer(text=f'현재 시각 : {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
+        embed.set_footer(text=f'현재 시각 : {datetime.now(timezone("Asia/Seoul")).strftime("%Y-%m-%d %H:%M:%S")}')
         return embed
 
     @staticmethod

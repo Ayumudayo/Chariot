@@ -361,7 +361,6 @@ async def convertimp(interaction: discord.Interaction, value: float, imp: str):
         embed = rs.error("처리 중 문제가 생겼어요. 단위와 값을 확인해 주세요.")
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
-    result = f"{value} {imp} = {resVal:.2f} {resMet}"
     lg.info(f"{value} {imp} to Metric is {resVal:.2f} {resMet}")
     embed = rs.general(title=f'{value} {imp} **IN METRIC**', content=f'**{resVal:.2f} {resMet}**')
     await interaction.response.send_message(embed=embed, ephemeral=True)
@@ -418,6 +417,7 @@ async def maintinfo(interaction: discord.Interaction):
 
     lg.info(f"{interaction.user.display_name} request maintinfo()")
     
+    # 0 = Start, 1 = End, 2 = Title, 3 = Link
     time_info = pa.GetMaintTimeStamp()
 
     if not time_info:
@@ -432,6 +432,7 @@ async def maintinfo(interaction: discord.Interaction):
     embed = discord.Embed(title=time_info[2], url=time_info[3], description=output, colour=discord.Colour.dark_blue())
     embed.set_thumbnail(url="https://cdn.discordapp.com/attachments/1138398345065414657/1138398369929244713/0001061.png")
     embed.add_field(name="일정", value=f'시작 : <t:{time_info[0]}:F> \n종료 : <t:{time_info[1]}:F> \n\n<t:{time_info[1]}:R>', inline=False)
+    await interaction.response.send_message(embed=embed)
 
     lg.info(f'공지 링크 : {time_info[3]}')
 #endregion
