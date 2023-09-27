@@ -12,17 +12,14 @@ You can check explanation of updates on [My Tistory Blog](https://u-bvm.tistory.
 
 ## Install
 
-Simply clone this repository, install requirments follow requirements.txt and run `kordBotPy.py` . And that’s it!
+Simply clone this repository, install requirments follow requirements.txt and get API Keys for some features.
+Finally you can run `chariot.py`. That’s it!
 
 ## Commands
 
 ### /kd
 
 Translate Korean to Weird Korean using multiple translations.
-
-### /kdnorn
-
-It just work same with `/kd` but without non-random-blank.
 
 ### /line
 
@@ -33,29 +30,37 @@ Create a Line. Line means Draw.
 3. Others can entry to Line with just click Entry button.
 4. If deadline reached, bot will remove buttons and edit embed that contain winner.
 
-### **/exchange**
+### /exchange
 
-Get exchange rate from https://github.com/fawazahmed0/currency-api
+Get exchange rate from https://github.com/fawazahmed0/currency-api.
 
-### **/tk**
+### /ratetable
 
-It use `/exchange` internally to get exchange rate to KRW from TWD
+Show exchange rate infos in form of embed. 
 
-### **/cvtime**
+### /tk
+
+It use `/exchange` internally to get exchange rate to KRW from TWD.
+
+### /cvtime
 
 Convert Datetime to UNIX Timestamp.
 
 ### /cvstamp
 
-Convert UNIX Timestamp to Datetime
+Convert UNIX Timestamp to Datetime.
 
 ### /convertimp
 
-Convert imperial to metric
+Convert imperial to metric.
 
 ### /deepl
 
-Translate words with DeepL translaotr
+Translate words with DeepL translator.
+
+### /maintinfo
+
+Get maintenance info from FFXIV Lodestone.
 
 ## Links
 
