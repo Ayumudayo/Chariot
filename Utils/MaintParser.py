@@ -1,7 +1,8 @@
+import pytz
 import requests
 import re
 from bs4 import BeautifulSoup
-from datetime import datetime
+from datetime import datetime, timezone
 
 class Parser:
 
@@ -74,8 +75,9 @@ class Parser:
         match = re.search(r"(\d{1,2}):(\d{1,2})頃まで", time_string)
         end_hour, end_minute = map(int, match.groups())
 
-        start_datetime = datetime(s_year, s_month, s_day, start_hour, start_minute)
-        end_datetime = datetime(e_year, e_month, e_day, end_hour, end_minute)
+        jst_timezone = pytz.timezone('Asia/Tokyo')
+        start_datetime = jst_timezone.localize(datetime(s_year, s_month, s_day, start_hour, start_minute))
+        end_datetime = jst_timezone.localize(datetime(e_year, e_month, e_day, end_hour, end_minute))
 
         return int(start_datetime.timestamp()), int(end_datetime.timestamp())
 
