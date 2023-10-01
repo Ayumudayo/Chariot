@@ -9,9 +9,9 @@ class Response:
         embed = discord.Embed(
             title = title,
             description = description,
-            colour = color
+            colour = color,
+            timestamp=datetime.utcnow()
         )
-        embed.set_footer(text=f'현재 시각 : {datetime.now(timezone("Asia/Seoul")).strftime("%Y-%m-%d %H:%M:%S")}')
         return embed
 
     @staticmethod

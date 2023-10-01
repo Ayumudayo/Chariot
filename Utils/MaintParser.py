@@ -1,11 +1,36 @@
+import json
 import pytz
 import requests
 import re
 from bs4 import BeautifulSoup
-from datetime import datetime, timezone
+from datetime import datetime
 
 class Parser:
+    
+    def save_maint_info(s_stamp, e_stamp, title, url):
 
+        maint_data = {
+            "start_stamp": s_stamp,
+            "end_stamp": e_stamp,
+            "title": title,
+            "url": url
+        }
+
+        with open("./maintinfo.json", 'w', encoding='utf-8') as f:
+            json.dump(maint_data, f, indent=4, ensure_ascii=False)
+           
+
+    def load_maint_infO():
+        try:
+            with open("./maintinfo.json", 'r', encoding='utf-8') as f:
+                info = json.load(f)
+
+                return info
+                #["start_stamp"], info["end_stamp"], info["title"], info["url"]
+        except:
+            return None
+
+    # Refactor this function
     def get_recent_maintenance_title(url):
         response = requests.get(url)
         soup = BeautifulSoup(response.content, 'html.parser') if response.status_code == 200 else None
@@ -31,9 +56,9 @@ class Parser:
                     month = int(date_parts[0])
                     day = int(date_parts[1].split('-')[0])
 
-                post_datetime = datetime(current_year, month, day)
+                post_datetime = pytz.timezone('Asia/Tokyo').localize(datetime(current_year, month, day))
 
-                if (datetime.now() - post_datetime).days < 1:
+                if (pytz.timezone('Asia/Tokyo').localize(datetime.now()) - post_datetime).days < 1:
                     return title_text, news_element.find('a')['href']
 
         return None
@@ -88,6 +113,11 @@ class Parser:
 
         if not infos[1]:
             return None
+        
+        json_data = Parser.load_maint_infO()
+        if json_data:
+            if json_data["title"] == infos[0]:
+                return json_data["start_stamp"], json_data["end_stamp"], json_data["title"], json_data["url"]
 
         url = f'https://jp.finalfantasyxiv.com{infos[1]}'
         html_content = Parser.get_html_content(url)
@@ -98,6 +128,8 @@ class Parser:
             start_unix_timestamp, end_unix_timestamp = Parser.parse_time_string(time_string)
             if end_unix_timestamp < datetime.now().timestamp():
                 return None
+            
+            Parser.save_maint_info(start_unix_timestamp, end_unix_timestamp, infos[0], url)
             return start_unix_timestamp, end_unix_timestamp, infos[0], url
         else:
             return None
