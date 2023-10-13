@@ -1,96 +1,71 @@
 import random
 import requests
+import json
 
 class Translator():    
 
-    def __init__(self, T_Id, T_Sec, L_Id, L_Sec):
-        super().__init__()
-        Translator.value = None
-        Translator.TR_Cliend_Id = T_Id
-        Translator.TR_Cliend_Secret = T_Sec
-        Translator.LD_Cliend_Id = L_Id
-        Translator.LD_Cliend_Secret = L_Sec
-        Translator.sdList = []
+    def __init__(self):
+        with open("./keys.json", 'r') as f:
+            cfg = json.load(f)
 
-        Translator.sdList.append(('ko', 'fr'))
-        Translator.sdList.append(('fr', 'en'))
-        Translator.sdList.append(('en', 'zh-CN'))
-        Translator.sdList.append(('zh-CN', "ko"))
+        f.close()
 
-    def Translate(text):
+        self.TR_Cliend_Id = cfg['PapagoTranslator']['TR_Cliend_Id']
+        self.TR_Cliend_Secret = cfg['PapagoTranslator']['TR_Cliend_Secret']
+        self.LD_Cliend_Id = cfg['PapagoLanguageDetector']['LD_Cliend_Id']
+        self.LD_Cliend_Secret = cfg['PapagoLanguageDetector']['LD_Cliend_Secret']
+        self.sdList = [('ko', 'fr'), ('fr', 'en'), ('en', 'zh-CN'), ('zh-CN', "ko")]        
 
-        langCode = Translator.LangDect(text)
-
+    def request_papago(self, source, target, text):
         papago_url = 'https://openapi.naver.com/v1/papago/n2mt'
         papago_headers = {
-            'X-Naver-Client-Id': Translator.TR_Cliend_Id,
-            'X-Naver-Client-Secret': Translator.TR_Cliend_Secret
+            'X-Naver-Client-Id': self.TR_Cliend_Id,
+            'X-Naver-Client-Secret': self.TR_Cliend_Secret
         }
         papago_data = {
-            'source': langCode,
-            'target': 'ko',
+            'source': source,
+            'target': target,
             'text': text
         }
         papago_response = requests.post(papago_url, headers=papago_headers, data=papago_data)
-        papago_result = papago_response.json()
+        return papago_response.json()
 
-        return papago_result['message']['result']['translatedText']
-    
-    def LangDect(text):
+    def request_papago_lang_dect(self, text):
         papagoLD_url = 'https://openapi.naver.com/v1/papago/detectLangs'
         papagoLD_headers = {
-            'X-Naver-Client-Id': Translator.LD_Cliend_Id,
-            'X-Naver-Client-Secret': Translator.LD_Cliend_Secret
+            'X-Naver-Client-Id': self.LD_Cliend_Id,
+            'X-Naver-Client-Secret': self.LD_Cliend_Secret
         }
         papagoLD_data = {
             'query': text
         }
         papagoLD_response = requests.post(papagoLD_url, headers=papagoLD_headers, data=papagoLD_data)
-        papagoLD_result = papagoLD_response.json()
+        return papagoLD_response.json()
 
+    def translate(self, text):
+        langCode = self.lang_dect(text)
+        papago_result = self.request_papago(langCode, 'ko', text)
+        return papago_result['message']['result']['translatedText']
+    
+    def lang_dect(self, text):
+        papagoLD_result = self.request_papago_lang_dect(text)
         return papagoLD_result['langCode']
 
-    def TranslateKD(text, i = 0):
-        
+    def translateKD(self, text, i = 0):
         count = i
-
-        papago_url = 'https://openapi.naver.com/v1/papago/n2mt'
-        papago_headers = {
-            'X-Naver-Client-Id': Translator.TR_Cliend_Id,
-            'X-Naver-Client-Secret': Translator.TR_Cliend_Secret
-        }
-        papago_data = {
-            'source': Translator.sdList[count][0],
-            'target': Translator.sdList[count][1],
-            'text': text
-        }
-        papago_response = requests.post(papago_url, headers=papago_headers, data=papago_data)
-        papago_result = papago_response.json()
+        papago_result = self.request_papago(self.sdList[count][0], self.sdList[count][1], text)
 
         if(count == 3):
             return papago_result['message']['result']['translatedText']
 
-        return Translator.TranslateKD(papago_result['message']['result']['translatedText'], count + 1)
+        return self.translateKD(papago_result['message']['result']['translatedText'], count + 1)
 
-    def LangDectKD(text):
-        papagoLD_url = 'https://openapi.naver.com/v1/papago/detectLangs'
-        papagoLD_headers = {
-            'X-Naver-Client-Id': Translator.LD_Cliend_Id,
-            'X-Naver-Client-Secret': Translator.LD_Cliend_Secret
-        }
-        papagoLD_data = {
-            'query': text
-        }
-        papagoLD_response = requests.post(papagoLD_url, headers=papagoLD_headers, data=papagoLD_data)
-        papagoLD_result = papagoLD_response.json()
+    def lang_dectKD(self, text):
+        papagoLD_result = self.request_papago_lang_dect(text)
+        return papagoLD_result['langCode'] == 'ko'
 
-        if(papagoLD_result['langCode'] != 'ko'):
-            return False
-        return True
-
-    def getRes(input, insert = True):
-
-        output = Translator.TranslateKD(input, 0)
+    def get_res(self, input, insert = True):
+        output = self.translateKD(input, 0)
         outputList = list(output)
 
         if(insert):
@@ -111,4 +86,3 @@ class Translator():
             output = ''.join(outputList)
 
         return output
-

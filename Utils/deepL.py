@@ -4,9 +4,9 @@ import json
 with open("./keys.json", 'r') as f:
     cfg = json.load(f)
 
-rapidapi_key = cfg["RapidAPI"]["RapidAPI_Key"]
-
 f.close()
+
+rapidapi_key = cfg["RapidAPI"]["RapidAPI_Key"]
 
 class deepl_translator:
 

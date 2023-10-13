@@ -5,6 +5,7 @@ import re
 from bs4 import BeautifulSoup
 from datetime import datetime
 
+# This class is used to parse the maintenance info from the website
 class Parser:
     
     def save_maint_info(s_stamp, e_stamp, title, url):
@@ -30,38 +31,40 @@ class Parser:
         except:
             return None
 
-    # Refactor this function
+
     def get_recent_maintenance_title(url):
-        response = requests.get(url)
-        soup = BeautifulSoup(response.content, 'html.parser') if response.status_code == 200 else None
-
-        if not soup:
+            response = requests.get(url)
+            soup = BeautifulSoup(response.content, 'html.parser') if response.status_code == 200 else None
+        
+            if not soup:
+                return None
+        
+            target_prefix = "全ワールド"
+            news_list_elements = soup.find_all(class_="news__list")
+            current_year = datetime.now().year
+        
+            for news_element in news_list_elements:
+                title_elements = news_element.find_all(class_="news__list--title")
+                for title_element in title_elements:
+                    title_text = "".join(str(item) for item in title_element.contents if item.name is None).strip()
+        
+                    if title_text.startswith(target_prefix):
+                        date_text = title_text.split('(')[-1].replace(')', '')
+        
+                        try:
+                            month, day = map(int, date_text.split('/')[0:2])
+                        except:
+                            date_parts = date_text.split('/')
+                            month = int(date_parts[0])
+                            day = int(date_parts[1].split('-')[1])
+        
+                        post_datetime = pytz.timezone('Asia/Tokyo').localize(datetime(current_year, month, day))
+        
+                        if (pytz.timezone('Asia/Tokyo').localize(datetime.now()) - post_datetime).days < 1:
+                            return title_text, news_element.find('a')['href']
+        
             return None
-
-        target_prefix = "全ワールド"
-        news_list_elements = soup.find_all(class_="news__list")
-        current_year = datetime.now().year
-
-        for news_element in news_list_elements:
-            title_element = news_element.find(class_="news__list--title")
-            title_text = "".join(str(item) for item in title_element.contents if item.name is None).strip()
-
-            if title_text.startswith(target_prefix):
-                date_text = title_text.split('(')[-1].replace(')', '')
-
-                try:
-                    month, day = map(int, date_text.split('/')[0:2])
-                except:
-                    date_parts = date_text.split('/')
-                    month = int(date_parts[0])
-                    day = int(date_parts[1].split('-')[0])
-
-                post_datetime = pytz.timezone('Asia/Tokyo').localize(datetime(current_year, month, day))
-
-                if (pytz.timezone('Asia/Tokyo').localize(datetime.now()) - post_datetime).days < 1:
-                    return title_text, news_element.find('a')['href']
-
-        return None
+        
     
     def get_maint_info():
         target_url = 'https://jp.finalfantasyxiv.com/lodestone/news/category/2'
@@ -83,7 +86,8 @@ class Parser:
             return time_match.group(1)
         else:
             return None
-
+        
+    # Parse the time string and return the start and end time in unix timestamp
     def parse_time_string(time_string):
         match = re.search(r"(\d{4})年(\d{1,2})月(\d{1,2})日", time_string)
         matches = re.compile(r"(\d{4})年(\d{1,2})月(\d{1,2})日").finditer(time_string)
@@ -106,27 +110,32 @@ class Parser:
 
         return int(start_datetime.timestamp()), int(end_datetime.timestamp())
 
-    def GetMaintTimeStamp():
-
+    def GetMaintTimeStamp():        
+        
+        # Check if the maintenance info is already saved
+        json_data = Parser.load_maint_infO()
+        if json_data:
+            if json_data["end_stamp"] >= pytz.timezone('Asia/Tokyo').localize(datetime.now()).timestamp():
+                return json_data["start_stamp"], json_data["end_stamp"], json_data["title"], json_data["url"]        
+            
+        # If maintenance info is not saved, get it from the website
         # infos[0] = title, infos[1] = link
         infos = Parser.get_maint_info()
 
+        # If there is no maintenance info, return None
         if not infos[1]:
             return None
-        
-        json_data = Parser.load_maint_infO()
-        if json_data:
-            if json_data["title"] == infos[0]:
-                return json_data["start_stamp"], json_data["end_stamp"], json_data["title"], json_data["url"]
 
+        # Get the time info from the link
         url = f'https://jp.finalfantasyxiv.com{infos[1]}'
         html_content = Parser.get_html_content(url)
         content = Parser.parse_html_content(html_content)
         time_string = Parser.extract_time_info(content)
 
+        # If end time is already passed, return None
         if time_string:
             start_unix_timestamp, end_unix_timestamp = Parser.parse_time_string(time_string)
-            if end_unix_timestamp < datetime.now().timestamp():
+            if end_unix_timestamp < pytz.timezone('Asia/Tokyo').localize(datetime.now()).timestamp():
                 return None
             
             Parser.save_maint_info(start_unix_timestamp, end_unix_timestamp, infos[0], url)
