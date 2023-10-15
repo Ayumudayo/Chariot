@@ -245,8 +245,6 @@ async def executeStock(interaction, ticker, driver):
        
     await interaction.response.defer(ephemeral=False)
 
-    ticker = ticker.upper()
-
     # Set default value
     if ticker is None:
         ticker = 'NVDA'
