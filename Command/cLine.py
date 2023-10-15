@@ -19,9 +19,9 @@ async def executeLine(interaction, prize: str, hour, min, sec):
     # Calculate total time from user input
     total_time = 3600 * hour + 60 * min + sec
 
-    # if total_time < 300:
-    #     await interaction.response.send_message('The time is too short. Please set the time to be at least 5 minutes.', ephemeral=True)
-    #     return
+    if total_time < 300:
+        await interaction.response.send_message('The time is too short. Please set the time to be at least 5 minutes.', ephemeral=True)
+        return
 
     start_time = int(time.time())
     deadline = start_time + total_time

@@ -249,8 +249,8 @@ async def executeStock(interaction, ticker, driver):
     if ticker is None:
         ticker = 'NVDA'
     else:
-        ticker = ticker.upper() 
-        
+        ticker = ticker.upper()
+
     if check_file_exist():
         rbt.load_from_json(jsonPath)
     else:
@@ -268,25 +268,18 @@ async def executeStock(interaction, ticker, driver):
     data = {}    
     driver.get(f"https://finance.yahoo.com/quote/{ticker}")
 
-    # Check if the market is open and scrape the post market data if it is closed
-    if not isOpen or stock_info['quoteType'] == 'ETF' :
-        # Define the XPaths for the elements both in regular and post market
-        xpaths = {
-            'regularMarketPrice': f'//fin-streamer[@data-field="regularMarketPrice" and @data-symbol="{ticker.upper()}"]',
-            'regularMarketChange': '//fin-streamer[@data-field="regularMarketChange"]/span',
-            'regularMarketChangePercent': '//fin-streamer[@data-field="regularMarketChangePercent"]/span',
+    # Define the XPaths for the elements both in regular and post market
+    xpaths = {
+        'regularMarketPrice': f'//fin-streamer[@data-field="regularMarketPrice" and @data-symbol="{ticker.upper()}"]' if stock_info['quoteType'] == 'ETF' else None,
+        'regularMarketChange': f'//fin-streamer[@data-field="regularMarketChange" and @data-symbol="{ticker.upper()}"]/span' if stock_info['quoteType'] == 'ETF' else None,
+        'regularMarketChangePercent': f'//fin-streamer[@data-field="regularMarketChangePercent" and @data-symbol="{ticker.upper()}"]/span' if stock_info['quoteType'] == 'ETF' else None,
+        'postMarketPrice': '//fin-streamer[@data-field="postMarketPrice"]' if not isOpen else None,
+        'postMarketChange': '//fin-streamer[@data-field="postMarketChange"]/span' if not isOpen else None,
+        'postMarketChangePercent': '//fin-streamer[@data-field="postMarketChangePercent"]/span' if not isOpen else None
+    }
 
-            'postMarketPrice': '//fin-streamer[@data-field="postMarketPrice"]',
-            'postMarketChange': '//fin-streamer[@data-field="postMarketChange"]/span',
-            'postMarketChangePercent': '//fin-streamer[@data-field="postMarketChangePercent"]/span'
-        }
-    else:
-        # Define the XPaths for the elements only in post market
-        xpaths = {
-            'postMarketPrice': '//fin-streamer[@data-field="postMarketPrice"]',
-            'postMarketChange': '//fin-streamer[@data-field="postMarketChange"]/span',
-            'postMarketChangePercent': '//fin-streamer[@data-field="postMarketChangePercent"]/span'
-        }    
+    # Remove None values from the dictionary
+    xpaths = {k: v for k, v in xpaths.items() if v is not None}    
 
     if stock_info['quoteType'] == 'ETF' or is_nasdaq_stocks(ticker):
     # Loop over the XPaths and scrape the data
