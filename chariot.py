@@ -2,6 +2,9 @@ import discord
 import json
 from discord import app_commands
 
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+
 with open("./keys.json", 'r') as f:
     cfg = json.load(f)
 
@@ -21,6 +24,16 @@ class MyClient(discord.Client):
         await self.tree.sync(guild=None)
 
 client = MyClient()
+
+# Path to the WebDriver executable
+driver_path = './Driver/chromedriver.exe'  # Update this with the path to your ChromeDriver executable
+
+# Set up Chrome options for headless browsing
+chrome_options = Options()
+chrome_options.add_argument("--headless")  # Run Chrome in headless mode (no GUI)
+
+# Initialize the Chrome driver with headless option
+driver = webdriver.Chrome(executable_path=driver_path, options=chrome_options)
 
 @client.event
 async def on_ready():
@@ -141,7 +154,7 @@ async def stock(interaction: discord.Interaction, ticker: str=None):
     """해당 주식 종목에 대한 그래프를 포함한 정보를 임베드 메세지 형태로 제공"""
 
     from Command.cStock import executeStock
-    await executeStock(interaction, ticker)
+    await executeStock(interaction, ticker, driver)
 #endregion
 
 
