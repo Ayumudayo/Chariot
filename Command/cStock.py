@@ -249,7 +249,9 @@ async def executeStock(interaction, ticker, driver):
 
     # Set default value
     if ticker is None:
-        ticker = 'NVDA'    
+        ticker = 'NVDA'
+    else:
+        ticker = ticker.upper() 
         
     if check_file_exist():
         rbt.load_from_json(jsonPath)
