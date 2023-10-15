@@ -54,13 +54,18 @@ Convert UNIX Timestamp to Datetime.
 
 Convert imperial to metric.
 
-### /deepl
+~~### /deepl~~
 
-Translate words with DeepL translator.
+~~Translate words with DeepL translator.~~
+Currently unavailable
 
 ### /maintinfo
 
 Get maintenance info from FFXIV Lodestone.
+
+### /stock
+
+Get Stock info from [Yahoo! Finance](https://finance.yahoo.com/)
 
 ## Links
 
