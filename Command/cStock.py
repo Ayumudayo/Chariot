@@ -243,7 +243,9 @@ def handle_etf(stock_info, data, isOpen):
 
 async def executeStock(interaction, ticker, driver):
        
-    await interaction.response.defer(ephemeral=False)    
+    await interaction.response.defer(ephemeral=False)
+
+    ticker = ticker.upper()
 
     # Set default value
     if ticker is None:
