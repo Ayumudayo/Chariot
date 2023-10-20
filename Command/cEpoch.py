@@ -35,13 +35,6 @@ async def executeCvStamp(interaction, srcstamp):
 
     detTime = ep.ConvertStamp(srcstamp)
 
-    # Exception Handling
-    if(detTime == 0):
-        Logger.error("Something went wrong while processing cvstamp()")
-        embed = rs.error("처리 중 문제가 생겼어요. 스탬프를 제대로 확인해 주세요.")
-        await interaction.response.send_message("처리 중 문제가 생겼어요. 제대로 된 스탬프를 입력했나요?", ephemeral=True)
-
-    else:
-        Logger.info(f"Convert Timestamp {srcstamp} to Datetime / {detTime} (GMT+9)")
-        embed = rs.general(title=f'"Timestamp "{srcstamp}" to Datetime"', content=f'{detTime} (GMT+9)')
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+    Logger.info(f"Convert Timestamp {srcstamp} to Datetime / {detTime} (GMT+9)")
+    embed = rs.general(title=f'"Timestamp "{srcstamp}" to Datetime"', content=f'<t:{srcstamp}:F>')
+    await interaction.response.send_message(embed=embed, ephemeral=True)

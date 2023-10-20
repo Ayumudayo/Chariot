@@ -1,5 +1,6 @@
 import discord
 import datetime
+import pytz
 
 from Utils.Log import Logger
 from Utils.PapagoLib import Translator
@@ -18,7 +19,7 @@ async def executeMaintinfo(interaction):
     if not time_info:
         embed = discord.Embed(title="점검 일정이 없습니다!", 
                               colour=discord.Colour.dark_red(), 
-                              timestamp=datetime.datetime.utcnow())
+                              timestamp=pytz.utc.localize(datetime.datetime.utcnow()))
         embed.set_thumbnail(url="https://cdn.discordapp.com/attachments/1138398345065414657/1138398369929244713/0001061.png")
         embed.add_field(name="", value="현재 확인할 수 있는 점검 공지가 없습니다.\n무언가 문제가 있다면 공식 로드스톤을 참고해 주세요.")
         await interaction.followup.send(embed=embed)
@@ -30,7 +31,7 @@ async def executeMaintinfo(interaction):
                           url=time_info[3], 
                           description=output, 
                           colour=discord.Colour.dark_blue(), 
-                          timestamp=datetime.datetime.utcnow())
+                          timestamp=pytz.utc.localize(datetime.datetime.utcnow()))
     embed.set_thumbnail(url="https://cdn.discordapp.com/attachments/1138398345065414657/1138398369929244713/0001061.png")
     embed.add_field(name="일정", value=f'시작 : <t:{time_info[0]}:F> \n종료 : <t:{time_info[1]}:F> \n\n<t:{time_info[1]}:R>', inline=False)
     await interaction.followup.send(embed=embed)

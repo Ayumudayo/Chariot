@@ -4,6 +4,8 @@ import datetime
 import random
 import time
 
+import pytz
+
 from Buttons.LineBtn import Entry as ent
 from Utils.Log import Logger
 from Utils import checkover as co
@@ -33,7 +35,7 @@ async def executeLine(interaction, prize: str, hour, min, sec):
     button_view = ent(interaction, prize, line_number)
 
     # Create initial Embed
-    embed = discord.Embed(title=f'Line #{line_number}', timestamp=datetime.datetime.now(), colour=discord.Colour.random())
+    embed = discord.Embed(title=f'Line #{line_number}', timestamp=pytz.utc.localize(datetime.datetime.utcnow()), colour=discord.Colour.random())
     embed.add_field(name='상품', value=prize, inline=True)
     embed.add_field(name='마감 까지 남은 시간', value=f"<t:{deadline}:R>", inline=False)
     embed.add_field(name='줄 세운 사람', value=f'<@{interaction.user.id}>')

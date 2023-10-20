@@ -67,6 +67,10 @@ Get maintenance info from FFXIV Lodestone.
 
 Get Stock info from [Yahoo! Finance](https://finance.yahoo.com/)
 
+### /etf
+
+Get ETF info from [Yahoo! Finance](https://finance.yahoo.com/) and print them in list.
+
 ## Links
 
 **[discord.py](https://github.com/Rapptz/discord.py)**

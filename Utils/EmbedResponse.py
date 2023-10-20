@@ -1,6 +1,6 @@
 from datetime import datetime
 import discord
-from pytz import timezone
+import pytz
 
 class Response:
 
@@ -10,7 +10,7 @@ class Response:
             title = title,
             description = description,
             colour = color,
-            timestamp=datetime.utcnow()
+            timestamp=pytz.utc.localize(datetime.utcnow())
         )
         return embed
 
