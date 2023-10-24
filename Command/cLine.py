@@ -10,7 +10,7 @@ from Buttons.LineBtn import Entry as ent
 from Utils.Log import Logger
 from Utils import checkover as co
 
-from Database.dynamo import awsDynamo
+from Database.dynamo import AwsDynamo as awsDynamo
 
 async def executeLine(interaction, prize: str, hour, min, sec):
 

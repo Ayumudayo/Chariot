@@ -1,10 +1,8 @@
-import asyncio
 import discord
 import json
 from discord import app_commands
 
 from Utils.Init import RbtInit
-from Utils.Pypp import Scraper
 
 with open("./keys.json", 'r') as f:
     cfg = json.load(f)
@@ -27,11 +25,8 @@ class MyClient(discord.Client):
 client = MyClient()
 
 # Initialize the Red-Black Tree
-rbt = RbtInit().init_rbt()
-
-# Initialize the Pyppeteer
-scraper = Scraper()
-ppWsEndpoint = asyncio.run(scraper.ppEndpoint())
+eqt_rbt = RbtInit('eqt').init_rbt()
+etf_rbt = RbtInit('etf').init_rbt()
 
 @client.event
 async def on_ready():
@@ -152,16 +147,17 @@ async def stock(interaction: discord.Interaction, ticker: str=None):
     """해당 주식 종목에 대한 그래프를 포함한 정보를 임베드 메세지 형태로 제공"""
 
     from Command.cStock import executeStock
-    await executeStock(interaction, ticker, rbt, ppWsEndpoint)
+    await executeStock(interaction, ticker, eqt_rbt)
 #endregion
 
 #region Stock
 @client.tree.command()
-async def etf(interaction: discord.Interaction):
+@app_commands.describe(ticker = 'ETF 코드, 미입력시 리스트 출력')
+async def etf(interaction: discord.Interaction, ticker: str=None):
     """쏚쓸말좆양봉호로야스출발ㅋㅋ"""
 
-    from Command.cETF import printETFs
-    await printETFs(interaction, ppWsEndpoint)
+    from Command.cETF import print_etfs
+    await print_etfs(interaction, etf_rbt, ticker)
 #endregion
 
 

@@ -25,7 +25,7 @@ class Logger:
 
     @staticmethod
     def push_log(log_type, content, datetime):
-        from Database.dynamo import awsDynamo as ad
+        from Database.dynamo import AwsDynamo as ad
         handle = ad()
 
         data = {

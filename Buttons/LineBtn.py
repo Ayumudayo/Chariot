@@ -3,7 +3,7 @@ import time
 import discord
 
 from Utils.Log import Logger as lg
-from Database.dynamo import awsDynamo as ad
+from Database.dynamo import AwsDynamo as ad
 
 # Button class
 class Entry(discord.ui.View):

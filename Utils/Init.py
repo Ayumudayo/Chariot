@@ -1,16 +1,16 @@
 from .nasdaqRtb import RedBlackTree
-from .Log import Logger
-
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
-from webdriver_manager.chrome import ChromeDriverManager
 
 class RbtInit:
-    def __init__(self, csvPath="./Data/Stock/nasdaq_screener.csv", jsonPath="./Data/Stock/rbt.json"):
+    def __init__(self, flag):
         self.rbt = RedBlackTree()
-        self.csvPath = csvPath
-        self.jsonPath = jsonPath
+        if flag == 'eqt':
+            self.csvPath = "./Data/Stock/nasdaq_screener.csv"
+            self.jsonPath = "./Data/Stock/eqt_rbt.json"
+        elif flag == 'etf':
+            self.csvPath = "./Data/Stock/nasdaq_etf_screener.csv"
+            self.jsonPath = "./Data/Stock/etf_rbt.json"
+
+
 
     # Function to create Red-Black Tree from CSV file and save it to a JSON file
     def create_rbt_from_csv_and_save(self):
@@ -33,18 +33,3 @@ class RbtInit:
             self.create_rbt_from_csv_and_save()
 
         return self.rbt
-
-class SeleBrowserInit:
-    def __init__(self):
-        self.chrome_options = Options()
-        self.chrome_options.add_argument("--headless")  # Run Chrome in headless mode (no GUI)
-        self.chrome_options.add_argument('--blink-settings=imagesEnabled=false')
-        self.chrome_options.add_argument('--no-sandbox')
-        self.chrome_options.add_argument('--disable-notifications')
-        self.chrome_options.add_argument('--disable-logging')
-        self.chrome_options.add_argument('--disable-cookies')
-        self.chrome_options.add_argument('--disable-extensions')
-        self.chrome_options.add_experimental_option('excludeSwitches', ['enable-logging'])
-
-    def init_browser(self):
-        return webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=self.chrome_options)

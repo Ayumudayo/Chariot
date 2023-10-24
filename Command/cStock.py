@@ -2,15 +2,16 @@ import json
 import discord
 import datetime
 import matplotlib
+import pytz
+import requests
 
 import yfinance as yf
 
-import pandas_market_calendars as mcal
-import pytz
+from lxml import html
 
 from Utils.Log import Logger
 from Utils.Pypp import Scraper
-from Utils.EmbedResponse import Response as es
+from Utils.EmbedResponse import Response as er
 from Utils.CheckNasdaqOpen import NasdaqOpenChecker as checker
 
 import time
@@ -58,6 +59,102 @@ def is_nasdaq_stocks(rbt, ticker):
 
 def is_nasdaq_open():
     return checker.is_nasdaq_open()
+
+# Output the structured data
+def na(value):
+    return value if value not in [None, ""] else "N/A"
+
+def scrape_stock_info(rbt, ticker):
+ 
+    data = {}    
+
+    if not is_nasdaq_stocks(rbt, ticker):
+        return None
+    
+    # Define the URL
+    url = f"https://stockanalysis.com/stocks/{ticker}/"
+
+    # Fetch the content of the webpage
+    response = requests.get(url)
+    response.raise_for_status()  # Raise an exception if there's an HTTP error
+    # Parse the content using lxml
+    tree = html.fromstring(response.content)
+    # Define the XPaths
+    xpaths = {
+        # Market Opne
+        'regMarket': '//*[@id="main"]/div[1]/div[2]/div/div[1]',
+        'regChangePercent': '//*[@id="main"]/div[1]/div[2]/div/div[2]',
+        
+        # Market Close
+        'closeMarket': '//*[@id="main"]/div[1]/div[2]/div[2]/div[1]',
+        'closeChangePercent': '//*[@id="main"]/div[1]/div[2]/div[2]/div[2]',
+    }
+
+    # Extract the values corresponding to the XPaths
+    for field, xpath in xpaths.items():
+        value = tree.xpath(xpath)[0].text_content().strip() if tree.xpath(xpath) else None
+        # Split and process the ChangePercent values
+        if 'ChangePercent' in field and value:
+            change, percent = value.split()
+            percent = percent.strip('()')
+            # Extract the sign (if present) from the change value
+            sign = ''
+            if change.startswith('+'):
+                sign = '+'
+                change = change[1:]
+            elif change.startswith('-'):
+                sign = '-'
+                change = change[1:]
+            
+            # Assign values based on the field name
+            if 'reg' in field:
+                data['regChange'] = change
+                data['regPercent'] = percent
+                data['regSign'] = sign
+            elif 'close' in field:
+                data['closeChange'] = change
+                data['closePercent'] = percent
+                data['closeSign'] = sign
+        else:
+            data[field] = value
+    
+    return data
+
+def add_embed_field(embed, data, is_open):
+
+    print(data)
+
+    if is_open:
+        updown = '<:yangbonghoro:1162456430360662018>' if data['regSign'] == '+'else '<:sale:1162457546532073623>' if data['regSign'] == '-' else ''
+        current = data['regMarket']
+        change = data['regChange']
+        percent = data['regPercent']
+        embed.colour = discord.Colour.green() if data['regSign'] == '+' else discord.Colour.red() if data['regSign'] == '-' else discord.Colour.dark_blue()
+
+        embed.add_field(name='Current', value=current, inline=True)
+        embed.add_field(name='Change', value=change, inline=True)
+        embed.add_field(name='Percent', value=f'{percent} {updown}', inline=True)
+    else:
+        updown = '<:yangbonghoro:1162456430360662018>' if data['closeSign'] == '+'else '<:sale:1162457546532073623>' if data['closeSign'] == '-' else ''
+
+        current = data['regMarket']
+        change = data['regChange']
+        percent = data['regPercent']
+
+        close = data['closeMarket']
+        close_change = data['closeChange']
+        close_percent = data['closePercent']
+        embed.colour = discord.Colour.green() if data['closeSign'] == '+' else discord.Colour.red() if data['closeSign'] == '-' else discord.Colour.dark_blue()
+    
+        embed.add_field(name='Current', value=current, inline=True)
+        embed.add_field(name='Change', value=change, inline=True)
+        embed.add_field(name='Percent', value=f'{percent} {updown}', inline=True)
+
+        embed.add_field(name='After/Pre Market', value=close, inline=True)
+        embed.add_field(name='Change', value=close_change, inline=True)
+        embed.add_field(name='Percent', value=f'{close_percent} {updown}', inline=True)
+
+    return embed
 
 def handle_equity(stock_info, data, isOpen, rbt):
 
@@ -186,11 +283,13 @@ def handle_etf(stock_info, data, isOpen):
 
     return embed
 
-async def executeStock(interaction, ticker, rbt, ppWsEndpoint):
+async def executeStock(interaction, ticker, rbt):
 
-    start_total = time.time()
+    Logger.info(f'{interaction.user.display_name} Executing stock command with ticker: {ticker}')
        
     await interaction.response.defer(ephemeral=False)
+
+    start_total = time.time()
 
     # Set default value
     if ticker is None:
@@ -199,76 +298,84 @@ async def executeStock(interaction, ticker, rbt, ppWsEndpoint):
         ticker = ticker.upper()
     
     # Get stock information from Yahoo Finance API
-    start_ticker = time.time()
-    try:
-        stock_info = yf.Ticker(ticker).info
-        with open('stock_info.json', 'w') as f:
-            json.dump(stock_info, f, indent=4)
-    except Exception as e:
-        Logger.error(f"An error occurred while getting ticker: {ticker}")
-        err_ebd = es.error(f"¡§∫∏∏¶ ∞°¡Æø¿¡ˆ ∏¯«ﬂΩ¿¥œ¥Ÿ: {ticker}\n∆ºƒø∏¶ ¿ﬂ∏¯ ¿‘∑¬«ﬂ∞≈≥™ API º≠πˆ∞° ¿¿¥‰«œ¡ˆ æ Ω¿¥œ¥Ÿ.")
-        await interaction.followup.send(embed = err_ebd, ephemeral=False)
-        return
-    end_ticker = time.time()
-    Logger.debug(f"Time taken to get ticker: {end_ticker - start_ticker} seconds")
+    # start_ticker = time.time()
+    # try:
+    #     stock_info = yf.Ticker(ticker).info
+    #     with open('stock_info.json', 'w') as f:
+    #         json.dump(stock_info, f, indent=4)
+    # except Exception as e:
+    #     Logger.error(f"An error occurred while getting ticker: {ticker}")
+    #     err_ebd = es.error(f"Ï†ïÎ≥¥Î•º Í∞ÄÏ†∏Ïò§ÏßÄ Î™ªÌñàÏäµÎãàÎã§: {ticker}\nÌã∞Ïª§Î•º ÏûòÎ™ª ÏûÖÎ†•ÌñàÍ±∞ÎÇò API ÏÑúÎ≤ÑÍ∞Ä ÏùëÎãµÌïòÏßÄ ÏïäÏäµÎãàÎã§.")
+    #     await interaction.followup.send(embed = err_ebd, ephemeral=False)
+    #     return
+    # end_ticker = time.time()
+    # Logger.debug(f"Time taken to get ticker: {end_ticker - start_ticker} seconds")
 
     # Check if the market is open
-    start_isOpen = time.time()
     isOpen = is_nasdaq_open()
-    Logger.debug(f"isOpen: {isOpen}")
-    end_isOpen = time.time()
-    Logger.debug(f"Time taken to check isOpen: {end_isOpen - start_isOpen} seconds")
     
-    start_first_log = time.time()
-    Logger.info(f'{interaction.user.display_name} Executing stock command with ticker: {ticker}')
-    end_first_log = time.time()
-    Logger.debug(f"Time taken to first log: {end_first_log - start_first_log} seconds")    
     
-    data = {}    
-    if stock_info['quoteType'] == 'ETF' or (is_nasdaq_stocks(rbt, ticker) and not isOpen):
-        start_scrape = time.time()
+    # data = {}    
+    # if stock_info['quoteType'] == 'ETF' or (is_nasdaq_stocks(rbt, ticker) and not isOpen):
+    #     start_scrape = time.time()
 
-        pp = Scraper()
-        await pp.init_browser(ppWsEndpoint)
-        data = await pp.scrape(ticker, stock_info, isOpen)
+    #     end_scrape = time.time()
+    #     Logger.debug(f"Time taken to scrape: {end_scrape - start_scrape} seconds")
 
-        end_scrape = time.time()
-        Logger.debug(f"Time taken to scrape: {end_scrape - start_scrape} seconds")
+    # #save stock_info in json format
+    # start_save = time.time()
+    # with open('stock_info.json', 'w') as f:
+    #     json.dump(stock_info, f, indent=4)
+    # end_save = time.time()
+    # Logger.debug(f"Time taken to save: {end_save - start_save} seconds")
 
-    #save stock_info in json format
-    start_save = time.time()
-    with open('stock_info.json', 'w') as f:
-        json.dump(stock_info, f, indent=4)
-    end_save = time.time()
-    Logger.debug(f"Time taken to save: {end_save - start_save} seconds")
+    # # Check if the stock is an Equity or ETF
+    # if stock_info['quoteType'] == 'EQUITY':
+    #     stock_type = 'Equity'
 
-    # Check if the stock is an Equity or ETF
-    if stock_info['quoteType'] == 'EQUITY':
-        stock_type = 'Equity'
+    # elif stock_info['quoteType'] == 'ETF':
+    #     stock_type = 'ETF'
+    # else:
+    #     stock_type = 'Unknown'
 
-    elif stock_info['quoteType'] == 'ETF':
-        stock_type = 'ETF'
-    else:
-        stock_type = 'Unknown'
+    # # Handle the stock based on its type
+    # start_branch = time.time()
+    # if stock_type == 'Equity':
+    #     embed = handle_equity(stock_info, data, isOpen, rbt)
+    # elif stock_type == 'ETF':
+    #     embed = handle_etf(stock_info, data, isOpen)
+    # else:
+    #     embed = discord.Embed(title=f"{stock_info['longName']} / [{stock_info['symbol']}]", 
+    #                           url=f"https://finance.yahoo.com/quote/{stock_info['symbol']}", 
+    #                           colour=discord.Colour.dark_blue(), 
+    #                           timestamp=datetime.datetime.utcnow())
+    #     embed.add_field(name="Error", value="Unknown stock type", inline=False)
 
-    # Handle the stock based on its type
-    start_branch = time.time()
-    if stock_type == 'Equity':
-        embed = handle_equity(stock_info, data, isOpen, rbt)
-    elif stock_type == 'ETF':
-        embed = handle_etf(stock_info, data, isOpen)
-    else:
-        embed = discord.Embed(title=f"{stock_info['longName']} / [{stock_info['symbol']}]", 
-                              url=f"https://finance.yahoo.com/quote/{stock_info['symbol']}", 
-                              colour=discord.Colour.dark_blue(), 
-                              timestamp=datetime.datetime.utcnow())
-        embed.add_field(name="Error", value="Unknown stock type", inline=False)
+    # end_branch = time.time()
+    # Logger.debug(f"Time taken to branch: {end_branch - start_branch} seconds")
 
-    end_branch = time.time()
-    Logger.debug(f"Time taken to branch: {end_branch - start_branch} seconds")
+    # end_total = time.time()
+    # Logger.debug(f"Total time taken: {end_total - start_total} seconds")
+    # await interaction.followup.send(embed=embed)
 
-    end_total = time.time()
-    Logger.debug(f"Total time taken: {end_total - start_total} seconds")
+    data = scrape_stock_info(rbt, ticker)
+
+    if data is None:
+        err_ebd = er.error(f'NASDAQÏóê ÏÉÅÏû•Îêú Ï¢ÖÎ™©Ïù¥ ÏïÑÎãê Ïàò ÏûàÏäµÎãàÎã§. : {ticker}')
+        await interaction.followup.send(embed = err_ebd, ephemeral=False)
+        return
+
+    now_utc = datetime.datetime.utcnow()
+    now_utc_aware = pytz.utc.localize(now_utc)
+
+    embed = discord.Embed(title=f"{ticker}", 
+                url=f"https://stockanalysis.com/stocks/{ticker}",
+                timestamp=now_utc_aware)
+    
+    embed = add_embed_field(embed, data, isOpen)
+
+    embed.set_footer(text="Data provided by Stock Analysis Website")
+
     await interaction.followup.send(embed=embed)
 
     return

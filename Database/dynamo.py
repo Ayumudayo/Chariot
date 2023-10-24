@@ -1,160 +1,116 @@
 import boto3
 from botocore.exceptions import ClientError
 from boto3.dynamodb.conditions import Key, Attr
-
 import json
 
-with open("./keys.json", 'r') as f:
-    cfg = json.load(f)
+class AwsDynamo:
+    """A Class that handles AWS DynamoDB"""
 
-Accees_Key_ID = cfg['AwsKeys']['Accees_Key_ID']
-Secret_Access_Key = cfg['AwsKeys']['Secret_Access_Key']
+    def __init__(self, credentials_file='./keys.json', region_name='ap-northeast-2'):
+        with open(credentials_file, 'r') as f:
+            cfg = json.load(f)
+        
+        access_key_id = cfg['AwsKeys']['Accees_Key_ID']
+        secret_access_key = cfg['AwsKeys']['Secret_Access_Key']
+        
+        self.dyn_resource = boto3.resource(
+            'dynamodb', 
+            region_name=region_name, 
+            aws_access_key_id=access_key_id, 
+            aws_secret_access_key=secret_access_key
+        )
+    
+    def _get_table(self, table_name):
+        return self.dyn_resource.Table(table_name)
 
-f.close()
-
-class awsDynamo:
-    """A Class that handle AWS DynamoDB"""
-
-    def __init__(self):        
-        super().__init__()
-
-        # Get the service resource.
-        awsDynamo.dyn_resource = boto3.resource('dynamodb', region_name='ap-northeast-2', 
-                                                aws_access_key_id=Accees_Key_ID, 
-                                                aws_secret_access_key=Secret_Access_Key)
-        awsDynamo.table = None
-
-
-    # Push data to table
-    @staticmethod
-    def push(data, tName):
-
-        awsDynamo.table = awsDynamo.dyn_resource.Table(tName)
-
+    def push(self, data, table_name):
+        table = self._get_table(table_name)
         try:
-            awsDynamo.table.put_item(
-                Item = data
-            )
-            
-            awsDynamo.table = None
+            table.put_item(Item=data)
             return True
-
         except ClientError as e:
             print(e.response['Error']['Message'])
             return False
-    
 
-    # Update Table 'linelist'
-    @staticmethod
-    def update(isEnd, ID, name, lNum):
-
-        awsDynamo.table = awsDynamo.dyn_resource.Table('linelists')
-
+    def update(self, isEnd, ID, name, lNum):
+        table = self._get_table('linelists')
         try:
-            response = awsDynamo.table.update_item(
+            table.update_item(
                 Key={'LinePK': 'Joul', 'linenumber': lNum},
                 UpdateExpression="set isEntryEnd=:b, winnerID=:wid, winnerName=:wname",
                 ExpressionAttributeValues={
-                    ':b': isEnd, ':wid': ID, ':wname': name},
-                ReturnValues="UPDATED_NEW")
-        except:
-            raise
+                    ':b': isEnd, ':wid': ID, ':wname': name
+                },
+                ReturnValues="UPDATED_NEW"
+            )
+            return True
+        except ClientError as e:
+            print(e.response['Error']['Message'])
+            return False
 
-        awsDynamo.table = None
-        return True
-    
-
-    # Use only on Table 'entrylist'
-    @staticmethod
-    def delete(line, userID):
-        awsDynamo.table = awsDynamo.dyn_resource.Table('entrylist')
-
+    def delete(self, line, userID):
+        table = self._get_table('entrylist')
         try:
-            awsDynamo.table.delete_item(
-                Key=
-                {
+            table.delete_item(
+                Key={
                     'linenumber': line,
                     'entryuserID': userID
                 }
             )
-        except:
-            raise
+            return True
+        except ClientError as e:
+            print(e.response['Error']['Message'])
+            return False
 
-        awsDynamo.table = None
-        return True
-    
+    def _query_table(self, table_name, **kwargs):
+        table = self._get_table(table_name)
+        return table.query(**kwargs)
 
-    # Retrieve highest line number
-    @staticmethod
-    def getLineNumber():
-
-        awsDynamo.table = awsDynamo.dyn_resource.Table('linelists')
-        rs = awsDynamo.table.query(
+    def getLineNumber(self):
+        response = self._query_table(
+            'linelists',
             ProjectionExpression="linenumber",
             KeyConditionExpression=Key('LinePK').eq('Joul'),
-            ScanIndexForward = False,
-            Limit = 1
-        )
-
-        awsDynamo.table = None
-        return rs['Items'][0]['linenumber']
-    
-
-    # Retrieve highest line number
-    @staticmethod
-    def getLogNumber():
-
-        awsDynamo.table = awsDynamo.dyn_resource.Table('log')
-        rs = awsDynamo.table.query(
-            ProjectionExpression="logNumber",
-            KeyConditionExpression=Key('LOG').eq('LOG'),
-            ScanIndexForward = False,
-            Limit = 1
-        )
-
-        awsDynamo.table = None
-        return rs['Items'][0]['logNumber']
-    
-
-    # Retrieve user list who entered
-    @staticmethod
-    def getEntryUsers(lNum):
-
-        awsDynamo.table = awsDynamo.dyn_resource.Table('entrylist')
-        
-        rs = awsDynamo.table.query(
-            ProjectionExpression="entryuserID, entryuserName",
-            KeyConditionExpression=Key('linenumber').eq(lNum),
-            ScanIndexForward = False,
-        )
-        
-        # List
-        return rs['Items']
-
-
-    # Check there is a user on the list who reqeust entry
-    @staticmethod
-    def checkExist(lNum, userID):
-
-        awsDynamo.table = awsDynamo.dyn_resource.Table('entrylist')
-
-        rs = awsDynamo.table.query(
-            ProjectionExpression="entryuserID",
-            KeyConditionExpression=Key('linenumber').eq(lNum) & Key('entryuserID').eq(userID),
-            ScanIndexForward = False,
+            ScanIndexForward=False,
             Limit=1
         )
+        return response['Items'][0]['linenumber']
 
-        try:
-            if (len(rs['Items']) == 0):
-                awsDynamo.table = None
-                return False
+    def getLogNumber(self):
+        response = self._query_table(
+            'log',
+            ProjectionExpression="logNumber",
+            KeyConditionExpression=Key('LOG').eq('LOG'),
+            ScanIndexForward=False,
+            Limit=1
+        )
+        return response['Items'][0]['logNumber']
 
-            if (userID == rs['Items'][0]['entryuserID']):
-                awsDynamo.table = None
-                return True
-        except:
-            awsDynamo.table = None
-            raise
+    def getEntryUsers(self, lNum):
+        response = self._query_table(
+            'entrylist',
+            ProjectionExpression="entryuserID, entryuserName",
+            KeyConditionExpression=Key('linenumber').eq(lNum),
+            ScanIndexForward=False
+        )
+        return response['Items']
 
-        return False
+    def checkExist(self, lNum, userID):
+        response = self._query_table(
+            'entrylist',
+            ProjectionExpression="entryuserID",
+            KeyConditionExpression=Key('linenumber').eq(lNum) & Key('entryuserID').eq(userID),
+            ScanIndexForward=False,
+            Limit=1
+        )
+        return bool(response['Items']) and userID == response['Items'][0]['entryuserID']
+
+
+if __name__ == '__main__':
+    with open("./keys.json", 'r') as f:
+        cfg = json.load(f)
+
+    aws_client = AwsDynamo(
+        access_key_id=cfg['AwsKeys']['Accees_Key_ID'],
+        secret_access_key=cfg['AwsKeys']['Secret_Access_Key']
+    )
