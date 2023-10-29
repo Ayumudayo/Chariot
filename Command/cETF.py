@@ -1,10 +1,10 @@
 import datetime
 import concurrent.futures
 import threading
-import time
 import discord
 import pytz
 import requests
+
 from lxml import html
 from Utils.CheckNasdaqOpen import NasdaqOpenChecker as checker
 from Utils.Log import Logger
@@ -135,6 +135,29 @@ def create_specific_embed(ticker, now_utc_aware, is_open):
     embed.set_footer(text="Data provided by Stock Analysis Website")
     return embed
 
+def get_premarket_status():
+    """Get pre-market status."""
+
+    # Define URL
+    url = "https://stockanalysis.com/stocks/nvda/"
+
+    # Fetch content
+    response = requests.get(url)
+    response.raise_for_status()
+    tree = html.fromstring(response.content)
+
+    # Define XPaths
+    xpath = {
+        'MarketStatus': '//*[@id="main"]/div[1]/div[2]/div[2]/div[3]/span[1]/span'
+    }
+
+    status = process_scraped_data(tree, xpath)  
+    # Remove ':' from the end of the string
+    if status['MarketStatus']:
+        status['MarketStatus'] = status['MarketStatus'][:-1]
+        
+    return status
+
 async def print_etfs(interaction, etfs_rbt, ticker):
     """Print ETF details to Discord."""
 
@@ -148,8 +171,15 @@ async def print_etfs(interaction, etfs_rbt, ticker):
     
     # Get UTC time
     now_utc_aware = pytz.utc.localize(datetime.datetime.utcnow())
+
     is_open = checker.is_nasdaq_open()
     open_close = 'Open  :green_circle:' if is_open else 'Close  :red_circle:'
+
+    if not is_open:
+        if get_premarket_status()['MarketStatus']:
+            open_close = f'{get_premarket_status()["MarketStatus"]}  :orange_circle:'
+        else:
+            open_close = 'Closed  :red_circle:'
 
     if ticker is None:
         embed = create_etf_embed(now_utc_aware, open_close, is_open)

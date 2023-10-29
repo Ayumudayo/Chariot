@@ -14,7 +14,8 @@ async def executeMaintinfo(interaction):
     Logger.info(f"{interaction.user.display_name} request maintinfo()")
     
     # 0 = Start, 1 = End, 2 = Title, 3 = Link
-    time_info = pa.GetMaintTimeStamp()
+    parser = pa()
+    time_info = parser.get_maintenance_timestamp()
 
     if not time_info:
         embed = discord.Embed(title="점검 일정이 없습니다!", 
@@ -25,7 +26,8 @@ async def executeMaintinfo(interaction):
         await interaction.followup.send(embed=embed)
         return
 
-    output = Translator.Translate(time_info[2])
+    tr = Translator()
+    output = tr.translate(time_info[2])
 
     embed = discord.Embed(title=time_info[2], 
                           url=time_info[3], 
