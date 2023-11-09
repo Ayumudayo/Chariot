@@ -1,4 +1,3 @@
-import json
 import discord
 import datetime
 import matplotlib
@@ -10,7 +9,6 @@ import yfinance as yf
 from lxml import html
 
 from Utils.Log import Logger
-from Utils.Pypp import Scraper
 from Utils.EmbedResponse import Response as er
 from Utils.CheckNasdaqOpen import NasdaqOpenChecker as checker
 
@@ -288,8 +286,6 @@ async def executeStock(interaction, ticker, rbt):
     Logger.info(f'{interaction.user.display_name} Executing stock command with ticker: {ticker}')
        
     await interaction.response.defer(ephemeral=False)
-
-    start_total = time.time()
 
     # Set default value
     if ticker is None:

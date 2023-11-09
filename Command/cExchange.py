@@ -1,16 +1,17 @@
 import discord
 import datetime
-from Utils.Currency import Exchange as ex
+from Utils.Currency import Exchange
 from Utils.Log import Logger
 from Utils.EmbedResponse import Response as rs
 
 async def executeTk(interaction, twd):
 
     Logger.info(f"{interaction.user.display_name} request tk().")
-
+    
+    ex = Exchange()
     result = ex.exchCur('twd', twd, 'krw')
 
-    if(result != 0):
+    if(result != '0.00'):
         twd = format(twd, ',')
 
         Logger.info(f"NT$ {twd} to KRW / {result}")
@@ -23,9 +24,10 @@ async def executeExchange(interaction, src, amount, dst):
     if (dst == None):
         dst = 'krw'
 
+    ex = Exchange()
     result = ex.exchCur(src, amount, dst)
 
-    if(result != 0):
+    if(result != '0.00'):
         src = src.upper()
         dst = dst.upper()
 
@@ -37,10 +39,11 @@ async def executeExchange(interaction, src, amount, dst):
     else:
         await interaction.response.send_message("처리 중 오류가 발생했습니다. USD, KRW, JPY와 같은 제대로 된 통화코드를 입력했나요?", ephemeral=True)
 
-
 async def execetueRateTable(interaction, src, amount):
 
     await interaction.response.defer()
+
+    Logger.info(f"{interaction.user.display_name} request ratetable().")
 
     # Set default values if not provided
     src = src.lower() if src else 'usd'
@@ -48,6 +51,7 @@ async def execetueRateTable(interaction, src, amount):
 
     try:
         # Get exchange rates
+        ex = Exchange()
         result = ex.exchCurList(src, amount)
         if result is None:
             raise ValueError("No exchange rates found for the given source and amount.")
@@ -72,7 +76,8 @@ async def execetueRateTable(interaction, src, amount):
         # Send embed message
         await interaction.followup.send(embed=embed)
 
-    except:
+    except Exception as e:
         Logger.error("Something went wrong while processing ratetable()")
         embed = rs.error("처리 중 오류가 발생했습니다. USD, KRW, JPY와 같은 제대로 된 통화코드를 입력했는지 확인하세요.")
+        Logger.error(e)
         await interaction.followup.send(embed=embed, ephemeral=True)
