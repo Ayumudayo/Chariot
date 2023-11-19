@@ -14,6 +14,9 @@ from Database.dynamo import AwsDynamo as awsDynamo
 
 async def executeLine(interaction, prize: str, hour, min, sec):
 
+    if sec is None:
+        sec = 0
+
     # Initialize DB class
     database = awsDynamo()
     line_number = database.getLineNumber() + 1
