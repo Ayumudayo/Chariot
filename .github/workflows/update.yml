@@ -23,11 +23,13 @@ jobs:
 
         script: |
 
+          pwd
+
           # Change directory to the bot folder
           cd ${{ secrets.BOT_DIR }}
 
           echo "Pull the latest code"
           git pull
-          
+
           echo "Restart the script"
           nohup python3 chariot.py > chariot.log 2>&1 &
