@@ -35,7 +35,8 @@ jobs:
               echo "Bot is running."
               # If process is running, kill it
               echo "Kill '$PROCESS_NAME'"
-              kill -SIGTERM $(ps aux | grep python3 | grep chariot.py | awk '{print $2}')
+              kill -SIGTERM $(pgrep -f "$PROCESS_NAME")
+              sleep 5  # Wait for the process to terminate
           else
               echo "Bot is not running."
               # If process is not running, pass it
