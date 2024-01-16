@@ -23,18 +23,11 @@ jobs:
 
         script: |
 
-          # Set process name
-          PROCESS_NAME="python3 chariot.py"
+          # Change directory to the bot folder
+          cd ${{ secrets.BOT_DIR }}
+
+          echo "Pull the latest code"
+          git pull
           
-          pkill -f "$PROCESS_NAME"
-
-          (
-            # Change directory to the bot folder
-            cd ${{ secrets.BOT_DIR }}
-
-            echo "Pull the latest code"
-            git pull
-
-            echo "Restart the script"
-            nohup python3 chariot.py > chariot.log 2>&1 &
-          )
+          echo "Restart the script"
+          nohup python3 chariot.py > chariot.log 2>&1 &
