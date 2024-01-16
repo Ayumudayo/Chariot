@@ -26,9 +26,20 @@ jobs:
           # Change directory to the bot folder
           cd ${{ secrets.BOT_DIR }}
 
-          # Kill python3 chariot.py
-          echo "Kill 'python3 chariot.py'"
-          kill -SIGTERM $(ps aux | grep python3 | grep chariot.py | awk '{print $2}')
+          # Set process name
+          PROCESS_NAME="python3 chariot.py"
+
+          # Check if process is running
+          if pgrep -f "$PROCESS_NAME" > /dev/null
+          then
+              echo "Bot is running."
+              # If process is running, kill it
+              echo "Kill '$PROCESS_NAME'"
+              kill -SIGTERM $(ps aux | grep python3 | grep chariot.py | awk '{print $2}')
+          else
+              echo "Bot is not running."
+              # If process is not running, pass it
+          fi
 
           echo "Pull the latest code"
           git pull
