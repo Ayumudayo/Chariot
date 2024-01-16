@@ -1,16 +1,21 @@
 import discord
-import json
+#import json
 from discord import app_commands
 
 from Utils.Init import RbtInit
 
-with open("./keys.json", 'r') as f:
-    cfg = json.load(f)
+import os
+from dotenv import load_dotenv
 
-f.close()
+load_dotenv(verbose=True)
 
-MY_GUILD = discord.Object(id=cfg['GUILD_ID'])
-OWNER_ID = cfg['OWNER_ID']
+# with open("./keys.json", 'r') as f:
+#     cfg = json.load(f)
+
+# f.close()
+
+MY_GUILD = discord.Object(id=os.getenv('GUILD_ID'))
+OWNER_ID = os.getenv('OWNER_ID')
 
 #region Bot initialize
 class MyClient(discord.Client):
@@ -179,4 +184,4 @@ async def sync(interaction: discord.Interaction):
         await interaction.followup.send('You have no permission to use this command.', ephemeral=True)
 #endregion
 
-client.run(cfg['BotToken'])
+client.run(os.getenv('BOT_TOKEN'))

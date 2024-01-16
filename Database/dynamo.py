@@ -1,17 +1,17 @@
 import boto3
-from botocore.exceptions import ClientError
-from boto3.dynamodb.conditions import Key, Attr
 import json
+import os
+
+from botocore.exceptions import ClientError
+from boto3.dynamodb.conditions import Key
 
 class AwsDynamo:
     """A Class that handles AWS DynamoDB"""
 
-    def __init__(self, credentials_file='./keys.json', region_name='ap-northeast-2'):
-        with open(credentials_file, 'r') as f:
-            cfg = json.load(f)
+    def __init__(self, region_name='ap-northeast-2'):
         
-        access_key_id = cfg['AwsKeys']['Accees_Key_ID']
-        secret_access_key = cfg['AwsKeys']['Secret_Access_Key']
+        access_key_id = os.getenv('Accees_Key_ID')
+        secret_access_key = os.getenv('Secret_Access_Key')
         
         self.dyn_resource = boto3.resource(
             'dynamodb', 
