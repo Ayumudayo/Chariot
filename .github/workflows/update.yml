@@ -38,16 +38,16 @@ jobs:
               echo "Bot is not running."
               # If process is not running, pass it
               echo "Pass the process."
-              exit 0  # Exit the script since there is nothing to restart
+              sleep 1
           fi
 
           (
             # Change directory to the bot folder
             cd ${{ secrets.BOT_DIR }}
-        
+
             echo "Pull the latest code"
             git pull
-        
+
             echo "Restart the script"
             nohup python3 chariot.py > chariot.log 2>&1 &
           )
