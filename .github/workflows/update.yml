@@ -23,12 +23,12 @@ jobs:
 
         script: |
 
-          ./kill_bot.sh
-
           pwd
           (
             # Change directory to the bot folder
             cd ${{ secrets.BOT_DIR }}
+
+            ./kill_bot.sh
         
             echo "Pull the latest code"
             git pull
