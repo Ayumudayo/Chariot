@@ -7,8 +7,7 @@ from Utils.Init import RbtInit
 import os
 from dotenv import load_dotenv
 
-dotenv_path = '/.env'
-load_dotenv(dotenv_path)
+load_dotenv(verbose=True)
 
 # with open("./keys.json", 'r') as f:
 #     cfg = json.load(f)
