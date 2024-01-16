@@ -23,18 +23,19 @@ jobs:
 
         script: |
 
-          pwd
           (
-            # Change directory to the bot folder
+            echo "### Change directory to the bot folder ###"
             cd ${{ secrets.BOT_DIR }}
 
+            echo "### Current directory ###"
             pwd
 
+            echo "### Kill the bot ###"
             ./kill_bot.sh
-        
-            echo "Pull the latest code"
+
+            echo "### Pull the latest code ###"
             git pull
-        
-            echo "Restart the script"
+
+            echo "### Restart the script ###"
             nohup python3 chariot.py > chariot.log 2>&1 &
           )
