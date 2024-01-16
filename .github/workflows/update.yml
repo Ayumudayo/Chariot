@@ -23,6 +23,8 @@ jobs:
 
         script: |
 
+          ./kill_bot.sh
+
           pwd
           (
             # Change directory to the bot folder
