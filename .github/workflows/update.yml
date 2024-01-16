@@ -32,7 +32,7 @@ jobs:
               echo "Bot is running."
               # If process is running, kill it
               echo "Kill '$PROCESS_NAME'"
-              kill -SIGTERM $(pgrep -f "$PROCESS_NAME")
+              pkill -f "$PROCESS_NAME"
               sleep 5
           else
               echo "Bot is not running."
