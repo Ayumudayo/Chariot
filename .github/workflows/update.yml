@@ -15,7 +15,7 @@ jobs:
       uses: appleboy/ssh-action@master
 
       with:
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        key: ${{ secrets.PRIVATE_KEY }}
         host: ${{ secrets.HOST }}
         username: ${{ secrets.USER }}
         port: ${{ secrets.PORT }}
@@ -23,30 +23,15 @@ jobs:
 
         script: |
 
-          pwd
-
           # Change directory to the bot folder
-          cd /home/ubuntu/bot/KORD_P
+          cd ${{ secrets.BOT_DIR }}
 
-          pwd
-
-          # Attach to the screen session
-          echo "Attach to the screen session"
-          screen -r main
-
-          # Send Ctrl+C to the foreground process
-          echo "Send Ctrl+C to the foreground process"
-          printf '\003'
+          # Kill python3 chariot.py
+          echo "Kill 'python3 chariot.py'"
+          kill -SIGTERM $(ps aux | grep python3 | grep chariot.py | awk '{print $2}')
 
           echo "Pull the latest code"
-          sleep 2
           git pull
 
-          ${{ secrets.GIT_NAME }}
-          ${{ secrets.GHP_TOKEN }}
-
           echo "Restart the script"
-          nohup python3 chariot.py &
-
-          # Detach from the screen session
-          printf '\033[A\033D'
+          nohup python3 chariot.py > chariot.log 2>&1 &
