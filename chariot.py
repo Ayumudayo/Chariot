@@ -184,4 +184,4 @@ async def sync(interaction: discord.Interaction):
         await interaction.followup.send('You have no permission to use this command.', ephemeral=True)
 #endregion
 
-client.run(os.getenv('BotToken'))
+client.run(os.getenv('BOT_TOKEN'))
