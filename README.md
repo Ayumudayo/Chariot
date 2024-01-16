@@ -69,7 +69,7 @@ Get Stock info from [Yahoo! Finance](https://finance.yahoo.com/)
 
 ### /etf
 
-Get ETF info from [Yahoo! Finance](https://finance.yahoo.com/) and print them in list.
+Get ETF info from [Stock Analysis](https://stockanalysis.com/) and print them in list.
 
 ## Links
 
