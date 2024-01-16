@@ -33,12 +33,10 @@ jobs:
               # If process is running, kill it
               echo "Kill '$PROCESS_NAME'"
               pkill -f "$PROCESS_NAME"
-              sleep 5
           else
               echo "Bot is not running."
               # If process is not running, pass it
               echo "Pass the process."
-              sleep 1
           fi
 
           (
