@@ -26,8 +26,6 @@ jobs:
           # Change directory to the bot folder
           cd ${{ secrets.BOT_DIR }}
 
-          pwd
-
           # Kill python3 chariot.py
           echo "Kill 'python3 chariot.py'"
           kill -SIGTERM $(ps aux | grep python3 | grep chariot.py | awk '{print $2}')
