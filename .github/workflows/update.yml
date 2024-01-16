@@ -28,6 +28,8 @@ jobs:
             # Change directory to the bot folder
             cd ${{ secrets.BOT_DIR }}
 
+            pwd
+
             ./kill_bot.sh
         
             echo "Pull the latest code"
