@@ -1,6 +1,7 @@
 import random
 import requests
 import json
+import os
 
 class Translator():    
 
@@ -10,10 +11,10 @@ class Translator():
 
         f.close()
 
-        self.TR_Cliend_Id = cfg['PapagoTranslator']['TR_Cliend_Id']
-        self.TR_Cliend_Secret = cfg['PapagoTranslator']['TR_Cliend_Secret']
-        self.LD_Cliend_Id = cfg['PapagoLanguageDetector']['LD_Cliend_Id']
-        self.LD_Cliend_Secret = cfg['PapagoLanguageDetector']['LD_Cliend_Secret']
+        self.TR_Cliend_Id = os.getenv('TR_Cliend_Id')
+        self.TR_Cliend_Secret = os.getenv('TR_Cliend_Secret')
+        self.LD_Cliend_Id = os.getenv('LD_Cliend_Id')
+        self.LD_Cliend_Secret = os.getenv('LD_Cliend_Secret')
         self.sdList = [('ko', 'fr'), ('fr', 'en'), ('en', 'zh-CN'), ('zh-CN', "ko")]        
 
     def request_papago(self, source, target, text):
