@@ -1,3 +1,4 @@
+import os
 import json
 import pytz
 import re
@@ -6,31 +7,44 @@ import requests
 from datetime import datetime
 from xml.etree import ElementTree as ET
 
+from Utils.PapagoLib import Translator
+
 class Parser:
     
     RSS_URL = 'https://jp.finalfantasyxiv.com/lodestone/news/news.xml'
     JST_TIMEZONE = pytz.timezone('Asia/Tokyo')
+    FILE_PATH = './Data/Maint/maintinfo.json'
+    DIR_PATH = './Data/Maint'
 
     def __init__(self):
         self.now_jst = self.JST_TIMEZONE.localize(datetime.now())
 
     # File operations
-    def save_maint_info(s_stamp, e_stamp, title, url):
+    def save_maint_info(self,s_stamp, e_stamp, title, title_kr, url):
         maint_data = {
             "start_stamp": s_stamp,
             "end_stamp": e_stamp,
             "title": title,
+            "title_kr": title_kr,
             "url": url
         }
 
-        with open("./maintinfo.json", 'w', encoding='utf-8') as f:
+        with open(self.FILE_PATH, 'w', encoding='utf-8') as f:
             json.dump(maint_data, f, indent=4, ensure_ascii=False)
 
-    def load_maint_info():
+    def load_maint_info(self):
+        # 폴더의 존재 여부를 확인
+        if not os.path.exists(os.path.dirname(self.DIR_PATH)):
+            # 폴더가 없으면 생성
+            os.makedirs(os.path.dirname(self.DIR_PATH), exist_ok=True)
+            return None
+
+        # 폴더가 존재하면 파일 열기 시도
         try:
-            with open("./maintinfo.json", 'r', encoding='utf-8') as f:
+            with open(self.FILE_PATH, 'r', encoding='utf-8') as f:
                 return json.load(f)
         except FileNotFoundError:
+            # 파일이 없는 경우 None 반환
             return None
 
     # RSS Parsing
@@ -40,15 +54,17 @@ class Parser:
             return None
         # {http://www.w3.org/2005/Atom}
         root = ET.fromstring(response.content)
-        for entry in root.findall('entry'):
-            title = entry.find('title').text
+        for entry in root.findall('{http://www.w3.org/2005/Atom}entry'):
+            title = entry.find('{http://www.w3.org/2005/Atom}title').text
             if '全ワールド' in title:
-                link = entry.find('link').attrib['href']
-                content = entry.find('content').text
+                link = entry.find('{http://www.w3.org/2005/Atom}link').attrib['href']
+                content = entry.find('{http://www.w3.org/2005/Atom}content').text
                 time_string = self.extract_time_info(content)
                 if time_string:
+                    tr = Translator()
+                    title_kr = tr.translate(title)                    
                     start_unix_timestamp, end_unix_timestamp = self.parse_time_string(time_string)
-                    return start_unix_timestamp, end_unix_timestamp, title, link
+                    return start_unix_timestamp, end_unix_timestamp, title, title_kr, link
         return None
 
     @staticmethod
@@ -73,15 +89,20 @@ class Parser:
         return int(start_datetime.timestamp()), int(end_datetime.timestamp())
 
     def get_maintenance_timestamp(self):
-        json_data = self.load_maint_info()
+        try:
+            json_data = self.load_maint_info()
+        except FileNotFoundError:
+            json_data = None
+
         if json_data and json_data["end_stamp"] >= self.now_jst.timestamp():
-            return json_data["start_stamp"], json_data["end_stamp"], json_data["title"], json_data["url"]
+            return json_data["start_stamp"], json_data["end_stamp"], json_data["title"], json_data["title_kr"],  json_data["url"]
 
         parsed_data = self.parse_rss_feed()
         if parsed_data:
-            start_unix_timestamp, end_unix_timestamp, title, url = parsed_data
+            start_unix_timestamp, end_unix_timestamp, title, title_kr, url = parsed_data
             if end_unix_timestamp >= self.now_jst.timestamp():
-                self.save_maint_info(start_unix_timestamp, end_unix_timestamp, title, url)
-                return start_unix_timestamp, end_unix_timestamp, title, url
+                self.save_maint_info(start_unix_timestamp, end_unix_timestamp, title, title_kr, url)
+                print(title_kr)
+                return start_unix_timestamp, end_unix_timestamp, title, title_kr, url
         
         return None

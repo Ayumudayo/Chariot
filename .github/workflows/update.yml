@@ -1,0 +1,52 @@
+name: Update and restart script on EC2
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3.3.0
+
+    - name: Connect to EC2 and restart script
+      uses: appleboy/ssh-action@master
+
+      with:
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.USER }}
+        port: ${{ secrets.PORT }}
+        timeout: 40s
+
+        script: |
+
+          pwd
+
+          # Change directory to the bot folder
+          cd /home/ubuntu/bot/KORD_P
+
+          pwd
+
+          # Attach to the screen session
+          echo "Attach to the screen session"
+          screen -r main
+
+          # Send Ctrl+C to the foreground process
+          echo "Send Ctrl+C to the foreground process"
+          printf '\003'
+
+          echo "Pull the latest code"
+          sleep 2
+          git pull
+
+          ${{ secrets.GIT_NAME }}
+          ${{ secrets.GHP_TOKEN }}
+
+          echo "Restart the script"
+          nohup python3 chariot.py &
+
+          # Detach from the screen session
+          printf '\033[A\033D'

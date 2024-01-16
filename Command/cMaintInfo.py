@@ -26,16 +26,13 @@ async def executeMaintinfo(interaction):
         await interaction.followup.send(embed=embed)
         return
 
-    tr = Translator()
-    output = tr.translate(time_info[2])
-
     embed = discord.Embed(title=time_info[2], 
-                          url=time_info[3], 
-                          description=output, 
+                          url=time_info[4], 
+                          description=time_info[3], 
                           colour=discord.Colour.dark_blue(), 
                           timestamp=pytz.utc.localize(datetime.datetime.utcnow()))
     embed.set_thumbnail(url="https://cdn.discordapp.com/attachments/1138398345065414657/1138398369929244713/0001061.png")
     embed.add_field(name="일정", value=f'시작 : <t:{time_info[0]}:F> \n종료 : <t:{time_info[1]}:F> \n\n<t:{time_info[1]}:R>', inline=False)
     await interaction.followup.send(embed=embed)
 
-    Logger.info(f'공지 링크 : {time_info[3]}')
+    Logger.info(f'공지 링크 : {time_info[4]}')
