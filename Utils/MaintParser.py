@@ -1,5 +1,6 @@
 import os
 import json
+import threading
 import pytz
 import re
 import requests
@@ -8,6 +9,7 @@ from datetime import datetime
 from xml.etree import ElementTree as ET
 
 from Utils.PapagoLib import Translator
+from Utils.Log import Logger
 
 class Parser:
     
@@ -54,6 +56,8 @@ class Parser:
             return None
         # {http://www.w3.org/2005/Atom}
         root = ET.fromstring(response.content)
+
+        # I don't know why, it doesn't work w/o {http://www.w3.org/2005/Atom}, 
         for entry in root.findall('{http://www.w3.org/2005/Atom}entry'):
             title = entry.find('{http://www.w3.org/2005/Atom}title').text
             if '全ワールド' in title:
@@ -69,24 +73,28 @@ class Parser:
 
     @staticmethod
     def extract_time_info(content):
-        time_match = re.search(r"日\s*時：(.*?)<br>", content, re.DOTALL)
+        time_match = re.search(r"日\s*時：(.*?)終了", content, re.DOTALL)
         return time_match.group(1) if time_match else None
 
     def parse_time_string(self, time_string):
         time_string = re.sub(r'<br\s*/?>', '', time_string)  # Remove HTML line breaks
         time_string = re.sub(r'[\r\n]', '', time_string)  # Remove new lines
 
-        matches = list(re.finditer(r"(\d{4})年(\d{1,2})月(\d{1,2})日", time_string))
-        s_year, s_month, s_day = map(int, matches[0].groups())
-        e_year, e_month, e_day = map(int, matches[1].groups()) if len(matches) > 1 else (s_year, s_month, s_day)
+        start_match = re.search(r"(\d{4})年(\d{1,2})月(\d{1,2})日\([^)]+\)\s*(\d{1,2}):(\d{1,2})より", time_string)
+        end_match = re.search(r"(\d{4})年(\d{1,2})月(\d{1,2})日\([^)]+\)\s*(\d{1,2}):(\d{1,2})頃まで", time_string)
 
-        start_hour, start_minute = map(int, re.search(r"(\d{1,2}):(\d{1,2})より", time_string).groups())
-        end_hour, end_minute = map(int, re.search(r"(\d{1,2}):(\d{1,2})頃まで", time_string).groups())
+        if start_match and end_match:
+            s_year, s_month, s_day, start_hour, start_minute = map(int, start_match.groups())
+            e_year, e_month, e_day, end_hour, end_minute = map(int, end_match.groups())
 
-        start_datetime = self.JST_TIMEZONE.localize(datetime(s_year, s_month, s_day, start_hour, start_minute))
-        end_datetime = self.JST_TIMEZONE.localize(datetime(e_year, e_month, e_day, end_hour, end_minute))
+            start_datetime = self.JST_TIMEZONE.localize(datetime(s_year, s_month, s_day, start_hour, start_minute))
+            end_datetime = self.JST_TIMEZONE.localize(datetime(e_year, e_month, e_day, end_hour, end_minute))
 
-        return int(start_datetime.timestamp()), int(end_datetime.timestamp())
+            return int(start_datetime.timestamp()), int(end_datetime.timestamp())
+        else:
+            # Handle case where either start or end time information is not found
+            return None, None
+
 
     def get_maintenance_timestamp(self):
         try:
@@ -99,10 +107,23 @@ class Parser:
 
         parsed_data = self.parse_rss_feed()
         if parsed_data:
+            print(parsed_data)
             start_unix_timestamp, end_unix_timestamp, title, title_kr, url = parsed_data
             if end_unix_timestamp >= self.now_jst.timestamp():
-                self.save_maint_info(start_unix_timestamp, end_unix_timestamp, title, title_kr, url)
-                print(title_kr)
                 return start_unix_timestamp, end_unix_timestamp, title, title_kr, url
         
+            self.save_maint_info(start_unix_timestamp, end_unix_timestamp, title, title_kr, url)
+            
         return None
+    
+    def check_for_maintenance(self):
+        Logger.info("Checking for maintenance...")
+
+        maint_info = self.get_maintenance_timestamp()
+        if maint_info:
+            Logger.info("Maintenance information updated.")
+        else:
+            Logger.info("Failed to retrieve maintenance information. May be a maintenance in progress.")
+
+        # Schedule the next check after 24 hours
+        threading.Timer(24 * 3600, self.check_for_maintenance).start()
