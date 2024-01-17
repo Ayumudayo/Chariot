@@ -2,11 +2,6 @@ import requests
 import json
 import os
 
-with open("./keys.json", 'r') as f:
-    cfg = json.load(f)
-
-f.close()
-
 rapidapi_key = os.getenv("RapidAPI_Key")
 
 class deepl_translator:

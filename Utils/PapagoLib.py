@@ -6,10 +6,6 @@ import os
 class Translator():    
 
     def __init__(self):
-        with open("./keys.json", 'r') as f:
-            cfg = json.load(f)
-
-        f.close()
 
         self.TR_Cliend_Id = os.getenv('TR_Cliend_Id')
         self.TR_Cliend_Secret = os.getenv('TR_Cliend_Secret')
