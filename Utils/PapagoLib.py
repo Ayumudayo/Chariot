@@ -7,10 +7,10 @@ class Translator():
 
     def __init__(self):
 
-        self.TR_Cliend_Id = os.getenv('TR_Cliend_Id')
-        self.TR_Cliend_Secret = os.getenv('TR_Cliend_Secret')
-        self.LD_Cliend_Id = os.getenv('LD_Cliend_Id')
-        self.LD_Cliend_Secret = os.getenv('LD_Cliend_Secret')
+        self.TR_Cliend_Id = os.getenv('TR_CLIENT_ID')
+        self.TR_Cliend_Secret = os.getenv('TR_CLIENT_SECRET')
+        self.LD_Cliend_Id = os.getenv('LD_CLIENT_ID')
+        self.LD_Cliend_Secret = os.getenv('LD_CLIENT_SECRET')
         self.sdList = [('ko', 'fr'), ('fr', 'en'), ('en', 'zh-CN'), ('zh-CN', "ko")]        
 
     def request_papago(self, source, target, text):

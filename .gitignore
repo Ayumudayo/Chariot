@@ -165,3 +165,4 @@ stock_info.json
 chromedriver.exe
 Data/Stock/eqt_rbt.json
 Data/Stock/etf_rbt.json
+tester.py
