@@ -23,15 +23,21 @@ jobs:
 
         script: |
 
-          # Change directory to the bot folder
-          cd ${{ secrets.BOT_DIR }}
+          (
+            echo "### Change directory to the bot folder ###"
+            cd ${{ secrets.BOT_DIR }}
 
-          # Kill python3 chariot.py
-          echo "Kill 'python3 chariot.py'"
-          kill -SIGTERM $(ps aux | grep python3 | grep chariot.py | awk '{print $2}')
+            echo "### Current directory ###"
+            pwd
 
-          echo "Pull the latest code"
-          git pull
+            echo "### Kill the bot ###"
+            ./kill_bot.sh
 
-          echo "Restart the script"
-          nohup python3 chariot.py > chariot.log 2>&1 &
+            echo "### Pull the latest code ###"
+            git pull
+
+            chmod -R 750 ../Chariot
+
+            echo "### Restart the script ###"
+            nohup python3 chariot.py > chariot.log 2>&1 &
+          )
