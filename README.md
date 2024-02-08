@@ -1,5 +1,11 @@
 # README
 
+# This project is no longer managed.
+
+Checkout [Dynamo](https://github.com/Ayumudayo/Dynamo).
+My new bot written in Java Script.
+Thanks to [discord-js-bot](https://github.com/saiteja-madha/discord-js-bot).
+
 # Chariot
 
 Chariot is a Discord Bot written in python; made with discord.py.
